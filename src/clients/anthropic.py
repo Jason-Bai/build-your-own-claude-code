@@ -122,8 +122,10 @@ def create_client(provider: str, api_key: str, **kwargs) -> BaseClient:
     if provider == "anthropic":
         return AnthropicClient(api_key, **kwargs)
     elif provider == "openai":
-        raise NotImplementedError("OpenAI client not implemented yet")
+        from .openai import OpenAIClient
+        return OpenAIClient(api_key, **kwargs)
     elif provider == "google":
-        raise NotImplementedError("Google client not implemented yet")
+        from .google import GoogleClient
+        return GoogleClient(api_key, **kwargs)
     else:
         raise ValueError(f"Unsupported provider: {provider}")

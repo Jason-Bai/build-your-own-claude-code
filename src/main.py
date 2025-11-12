@@ -249,7 +249,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
         model_name = openai_model
 
     elif google_api_key:
-        selected_provider = "gemini"
+        selected_provider = "google"
         api_key = google_api_key
         model_name = google_model
 
