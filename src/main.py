@@ -17,7 +17,7 @@ except ImportError:
         pass
 
 from .agents import EnhancedAgent, PermissionMode
-from .clients import create_client
+from .clients import create_client, check_provider_available
 from .tools import (
     ReadTool, WriteTool, EditTool,
     BashTool, GlobTool, GrepTool,
@@ -239,37 +239,18 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     api_key = None
     model_name = None
 
-    # 检查每个提供商是否真的可用（包需要安装）
-    try:
-        import anthropic
-        anthropic_available = True
-    except ImportError:
-        anthropic_available = False
-
-    try:
-        import openai
-        openai_available = True
-    except ImportError:
-        openai_available = False
-
-    try:
-        import google.generativeai
-        google_available = True
-    except ImportError:
-        google_available = False
-
     # 按优先级选择提供商（如果包可用且有 API key）
-    if anthropic_api_key and anthropic_available:
+    if anthropic_api_key and check_provider_available("anthropic"):
         selected_provider = "anthropic"
         api_key = anthropic_api_key
         model_name = anthropic_model
 
-    elif openai_api_key and openai_available:
+    elif openai_api_key and check_provider_available("openai"):
         selected_provider = "openai"
         api_key = openai_api_key
         model_name = openai_model
 
-    elif google_api_key and google_available:
+    elif google_api_key and check_provider_available("google"):
         selected_provider = "google"
         api_key = google_api_key
         model_name = google_model
@@ -279,12 +260,12 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
         OutputFormatter.warning("Anthropic API key found but anthropic package not installed")
         OutputFormatter.warning("Install with: pip install anthropic")
         # 继续尝试其他提供商
-        if openai_api_key and openai_available:
+        if openai_api_key and check_provider_available("openai"):
             OutputFormatter.info("Falling back to OpenAI provider")
             selected_provider = "openai"
             api_key = openai_api_key
             model_name = openai_model
-        elif google_api_key and google_available:
+        elif google_api_key and check_provider_available("google"):
             OutputFormatter.info("Falling back to Google provider")
             selected_provider = "google"
             api_key = google_api_key
@@ -294,7 +275,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
         OutputFormatter.warning("OpenAI API key found but openai package not installed")
         OutputFormatter.warning("Install with: pip install openai")
         # 继续尝试其他提供商
-        if google_api_key and google_available:
+        if google_api_key and check_provider_available("google"):
             OutputFormatter.info("Falling back to Google provider")
             selected_provider = "google"
             api_key = google_api_key

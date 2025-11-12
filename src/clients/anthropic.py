@@ -106,38 +106,3 @@ class AnthropicClient(BaseClient):
     def context_window(self) -> int:
         return 200000  # Claude 3.5 Sonnet
 
-
-def create_client(provider: str, api_key: str, **kwargs) -> BaseClient:
-    """
-    创建客户端
-
-    Args:
-        provider: "anthropic" | "openai" | "google"
-        api_key: API key
-        **kwargs: 其他参数（如 model）
-
-    Returns:
-        BaseClient 实例
-    """
-    if provider == "anthropic":
-        return AnthropicClient(api_key, **kwargs)
-    elif provider == "openai":
-        try:
-            from .openai import OpenAIClient
-            return OpenAIClient(api_key, **kwargs)
-        except ImportError as e:
-            raise ImportError(
-                f"Cannot use OpenAI provider: {e}\n"
-                "Please install the openai package: pip install openai"
-            )
-    elif provider == "google":
-        try:
-            from .google import GoogleClient
-            return GoogleClient(api_key, **kwargs)
-        except ImportError as e:
-            raise ImportError(
-                f"Cannot use Google provider: {e}\n"
-                "Please install the google-generativeai package: pip install google-generativeai"
-            )
-    else:
-        raise ValueError(f"Unsupported provider: {provider}")
