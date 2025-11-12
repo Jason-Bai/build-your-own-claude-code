@@ -284,20 +284,20 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     # 如果还是没找到，报错并显示配置指南
     if not selected_provider or not api_key:
         OutputFormatter.error("No API provider configuration found")
-        print("\nPlease configure using one of the following methods:")
-        print("\nMethod 1 - Environment Variables (Highest Priority):")
-        print("  export ANTHROPIC_API_KEY='your-key'")
-        print("  export ANTHROPIC_MODEL='claude-sonnet-4-5-20250929'  # optional")
-        print("\nMethod 2 - .env file (copy .env.example to .env):")
-        print("  ANTHROPIC_API_KEY=your-key")
-        print("  ANTHROPIC_MODEL=claude-sonnet-4-5-20250929")
-        print("\nMethod 3 - config.json (fallback):")
-        print("  {")
-        print("    \"model\": {")
-        print("      \"ANTHROPIC_API_KEY\": \"your-key\",")
-        print("      \"ANTHROPIC_MODEL\": \"claude-sonnet-4-5-20250929\"")
-        print("    }")
-        print("  }")
+        OutputFormatter.info("Please configure using one of the following methods:")
+        OutputFormatter.info("Method 1 - Environment Variables (Highest Priority):")
+        OutputFormatter.info("  export ANTHROPIC_API_KEY='your-key'")
+        OutputFormatter.info("  export ANTHROPIC_MODEL='claude-sonnet-4-5-20250929'  # optional")
+        OutputFormatter.info("Method 2 - .env file (copy .env.example to .env):")
+        OutputFormatter.info("  ANTHROPIC_API_KEY=your-key")
+        OutputFormatter.info("  ANTHROPIC_MODEL=claude-sonnet-4-5-20250929")
+        OutputFormatter.info("Method 3 - config.json (fallback):")
+        OutputFormatter.info("  {")
+        OutputFormatter.info("    \"model\": {")
+        OutputFormatter.info("      \"ANTHROPIC_API_KEY\": \"your-key\",")
+        OutputFormatter.info("      \"ANTHROPIC_MODEL\": \"claude-sonnet-4-5-20250929\"")
+        OutputFormatter.info("    }")
+        OutputFormatter.info("  }")
         sys.exit(1)
 
     # 创建客户端
@@ -507,7 +507,7 @@ def cli():
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        print("\n\n👋 Goodbye!")
+        OutputFormatter.success("Goodbye!")
         sys.exit(0)
 
 
