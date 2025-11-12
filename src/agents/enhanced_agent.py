@@ -9,6 +9,7 @@ from .state import AgentState, AgentStateManager, ToolCall
 from .context_manager import AgentContextManager
 from .tool_manager import AgentToolManager
 from .permission_manager import PermissionManager, PermissionMode
+from ..hooks import HookManager, HookContextBuilder, HookEvent
 
 if TYPE_CHECKING:
     from ..mcps import MCPClient
@@ -25,7 +26,8 @@ class EnhancedAgent:
         max_context_tokens: int = 150000,
         mcp_client: Optional["MCPClient"] = None,
         permission_mode: PermissionMode = PermissionMode.AUTO_APPROVE_SAFE,
-        on_state_change: Optional[Callable] = None
+        on_state_change: Optional[Callable] = None,
+        hook_manager: Optional[HookManager] = None
     ):
         # 核心组件
         self.client = client
@@ -36,9 +38,11 @@ class EnhancedAgent:
         self.context_manager = AgentContextManager(max_tokens=max_context_tokens)
         self.tool_manager = AgentToolManager(mcp_client=mcp_client)
         self.permission_manager = PermissionManager(mode=permission_mode)
+        self.hook_manager = hook_manager or HookManager()
 
         # 其他组件
         self.todo_manager = TodoManager()
+        self._hook_context_builder: Optional[HookContextBuilder] = None
 
         # 设置系统提示
         if system_prompt:
@@ -66,11 +70,29 @@ class EnhancedAgent:
         Returns:
             执行结果统计
         """
+        # Initialize hook context builder for this run
+        self._hook_context_builder = HookContextBuilder()
+
+        # Trigger: on_user_input
+        await self.hook_manager.trigger(
+            HookEvent.ON_USER_INPUT,
+            self._hook_context_builder.build(
+                HookEvent.ON_USER_INPUT,
+                input=user_input
+            )
+        )
+
         # 1. 添加用户消息
         self.context_manager.add_user_message(user_input)
 
         # 2. 状态：开始思考
         self._transition_state(AgentState.THINKING)
+
+        # Trigger: on_agent_start
+        await self.hook_manager.trigger(
+            HookEvent.ON_AGENT_START,
+            self._hook_context_builder.build(HookEvent.ON_AGENT_START)
+        )
 
         # 3. 压缩上下文（如果需要）
         await self.context_manager.compress_if_needed(self.client)
@@ -108,6 +130,15 @@ class EnhancedAgent:
                     if verbose:
                         print()
                     self._transition_state(AgentState.COMPLETED)
+
+                    # Trigger: on_agent_end
+                    await self.hook_manager.trigger(
+                        HookEvent.ON_AGENT_END,
+                        self._hook_context_builder.build(
+                            HookEvent.ON_AGENT_END,
+                            success=True
+                        )
+                    )
                     break
 
                 # 10. 执行工具
@@ -127,7 +158,26 @@ class EnhancedAgent:
                 if verbose:
                     print(f"\n❌ Error: {str(e)}")
                 self._transition_state(AgentState.ERROR)
+
+                # Trigger: on_error
+                await self.hook_manager.trigger(
+                    HookEvent.ON_ERROR,
+                    self._hook_context_builder.build(
+                        HookEvent.ON_ERROR,
+                        error=str(e),
+                        error_type=type(e).__name__
+                    )
+                )
                 break
+
+        # Trigger: on_shutdown
+        await self.hook_manager.trigger(
+            HookEvent.ON_SHUTDOWN,
+            self._hook_context_builder.build(
+                HookEvent.ON_SHUTDOWN,
+                final_state=self.state_manager.current_state.value
+            )
+        )
 
         # 返回统计信息
         return self.get_statistics()
@@ -172,9 +222,29 @@ class EnhancedAgent:
             )
             self.state_manager.record_tool_call(tool_call)
 
+            # Trigger: on_tool_select
+            await self.hook_manager.trigger(
+                HookEvent.ON_TOOL_SELECT,
+                self._hook_context_builder.build(
+                    HookEvent.ON_TOOL_SELECT,
+                    tool_name=tool_name,
+                    tool_id=tool_id
+                )
+            )
+
             # 🔐 权限检查
             tool = self.tool_manager.get_tool(tool_name)
             if tool:
+                # Trigger: on_permission_check
+                await self.hook_manager.trigger(
+                    HookEvent.ON_PERMISSION_CHECK,
+                    self._hook_context_builder.build(
+                        HookEvent.ON_PERMISSION_CHECK,
+                        tool_name=tool_name,
+                        tool_input=tool_input
+                    )
+                )
+
                 is_approved, deny_message = await self.permission_manager.request_permission(
                     tool, tool_input
                 )
@@ -197,6 +267,17 @@ class EnhancedAgent:
             if verbose:
                 print(f"\n[Using tool: {tool_name}]", flush=True)
 
+            # Trigger: on_tool_execute
+            await self.hook_manager.trigger(
+                HookEvent.ON_TOOL_EXECUTE,
+                self._hook_context_builder.build(
+                    HookEvent.ON_TOOL_EXECUTE,
+                    tool_name=tool_name,
+                    tool_id=tool_id,
+                    tool_input=tool_input
+                )
+            )
+
             # 执行工具
             result = await self.tool_manager.execute_tool(tool_name, tool_input)
 
@@ -206,6 +287,28 @@ class EnhancedAgent:
                 result=result if result.success else None,
                 error=result.error
             )
+
+            # Trigger: on_tool_result or on_tool_error
+            if result.success:
+                await self.hook_manager.trigger(
+                    HookEvent.ON_TOOL_RESULT,
+                    self._hook_context_builder.build(
+                        HookEvent.ON_TOOL_RESULT,
+                        tool_name=tool_name,
+                        tool_id=tool_id,
+                        result=result.output
+                    )
+                )
+            else:
+                await self.hook_manager.trigger(
+                    HookEvent.ON_TOOL_ERROR,
+                    self._hook_context_builder.build(
+                        HookEvent.ON_TOOL_ERROR,
+                        tool_name=tool_name,
+                        tool_id=tool_id,
+                        error=result.error
+                    )
+                )
 
             # 特殊处理：TodoWrite 更新本地状态
             if tool_name == "TodoWrite" and result.success:
