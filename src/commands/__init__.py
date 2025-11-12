@@ -23,11 +23,6 @@ from .output_commands import (
     VerboseCommand,
     QuietCommand
 )
-from .permission_commands import (
-    SavePermissionsCommand,
-    ShowPermissionsCommand,
-    ResetPermissionsCommand
-)
 
 
 def register_builtin_commands():
@@ -48,10 +43,6 @@ def register_builtin_commands():
     # Output commands
     command_registry.register(VerboseCommand())
     command_registry.register(QuietCommand())
-    # Permission commands
-    command_registry.register(SavePermissionsCommand())
-    command_registry.register(ShowPermissionsCommand())
-    command_registry.register(ResetPermissionsCommand())
 
 
 __all__ = [
