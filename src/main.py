@@ -231,27 +231,74 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     openai_model = model_config.get("OPENAI_MODEL", "gpt-4o")
 
     google_api_key = model_config.get("GOOGLE_API_KEY")
-    google_model = model_config.get("GOOGLE_MODEL", "gemini-1.5-flash")
+    google_model = model_config.get("GOOGLE_MODEL", "gemini-2.5-flash")
 
     # 检测可用的 API provider（按优先级检查 API_KEY 是否存在）
+    # 同时检查相应的包是否可用
     selected_provider = None
     api_key = None
     model_name = None
 
-    if anthropic_api_key:
+    # 检查每个提供商是否真的可用（包需要安装）
+    try:
+        import anthropic
+        anthropic_available = True
+    except ImportError:
+        anthropic_available = False
+
+    try:
+        import openai
+        openai_available = True
+    except ImportError:
+        openai_available = False
+
+    try:
+        import google.generativeai
+        google_available = True
+    except ImportError:
+        google_available = False
+
+    # 按优先级选择提供商（如果包可用且有 API key）
+    if anthropic_api_key and anthropic_available:
         selected_provider = "anthropic"
         api_key = anthropic_api_key
         model_name = anthropic_model
 
-    elif openai_api_key:
+    elif openai_api_key and openai_available:
         selected_provider = "openai"
         api_key = openai_api_key
         model_name = openai_model
 
-    elif google_api_key:
+    elif google_api_key and google_available:
         selected_provider = "google"
         api_key = google_api_key
         model_name = google_model
+
+    # 如果选择的提供商不可用，尝试其他的
+    elif anthropic_api_key:
+        OutputFormatter.warning("Anthropic API key found but anthropic package not installed")
+        OutputFormatter.warning("Install with: pip install anthropic")
+        # 继续尝试其他提供商
+        if openai_api_key and openai_available:
+            OutputFormatter.info("Falling back to OpenAI provider")
+            selected_provider = "openai"
+            api_key = openai_api_key
+            model_name = openai_model
+        elif google_api_key and google_available:
+            OutputFormatter.info("Falling back to Google provider")
+            selected_provider = "google"
+            api_key = google_api_key
+            model_name = google_model
+
+    elif openai_api_key:
+        OutputFormatter.warning("OpenAI API key found but openai package not installed")
+        OutputFormatter.warning("Install with: pip install openai")
+        # 继续尝试其他提供商
+        if google_api_key and google_available:
+            OutputFormatter.info("Falling back to Google provider")
+            selected_provider = "google"
+            api_key = google_api_key
+            model_name = google_model
 
     # 如果还是没找到，报错并显示配置指南
     if not selected_provider or not api_key:
