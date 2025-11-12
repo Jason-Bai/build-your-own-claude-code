@@ -12,7 +12,7 @@ try:
     DOTENV_AVAILABLE = True
 except ImportError:
     DOTENV_AVAILABLE = False
-    def load_dotenv():
+    def load_dotenv(**kwargs):
         # Fallback: do nothing if dotenv not available
         pass
 
@@ -43,7 +43,7 @@ def load_config(config_path: str = "config.json") -> dict:
     # 2. 如果存在 .env 文件，用 .env 覆盖 config.json
     env_file = Path(".env")
     if env_file.exists():
-        load_dotenv(env_file)
+        load_dotenv(dotenv_path=env_file)
 
         # 从 .env 文件读取配置并覆盖 config.json
         # 注意：这里用 os.environ.get() 而不是 os.getenv() 来获取 .env 文件中的值
@@ -124,7 +124,7 @@ def _setup_hooks(hook_manager: HookManager, config: dict, verbose: bool = False)
     hook_manager.register_error_handler(error_handler)
 
 
-def _load_user_hooks(hook_manager: HookManager, verbose: bool = False) -> None:
+async def _load_user_hooks(hook_manager: HookManager, verbose: bool = False) -> None:
     """Load user-defined hooks from configuration files
 
     Loads hooks from ~/.tiny-claude/settings.json, .tiny-claude/settings.json,
@@ -134,14 +134,11 @@ def _load_user_hooks(hook_manager: HookManager, verbose: bool = False) -> None:
         hook_manager: HookManager instance to register hooks with
         verbose: Whether to print loading information
     """
-    import asyncio
-
     loader = HookConfigLoader()
 
     try:
-        # Load user hooks (this is async, so we need to run it in the event loop)
-        # Since we're called from sync context, we'll use asyncio.run
-        stats = asyncio.run(loader.load_hooks(hook_manager, skip_errors=True))
+        # Load user hooks using the async loader
+        stats = await loader.load_hooks(hook_manager, skip_errors=True)
 
         if stats["loaded_files"] > 0:
             OutputFormatter.success(
@@ -339,7 +336,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     _setup_hooks(hook_manager, config, verbose=args.verbose if args else False)
 
     # 加载用户定义的 Hook（从 .tiny-claude 配置文件）
-    _load_user_hooks(hook_manager, verbose=args.verbose if args else False)
+    await _load_user_hooks(hook_manager, verbose=args.verbose if args else False)
 
     # 注册内置工具
     agent.tool_manager.register_tools([

@@ -96,13 +96,13 @@ class StatusCommand(Command):
         agent = context.agent
 
         # 统计信息
-        total_messages = len(agent.context.messages)
-        estimated_tokens = agent.context.estimate_tokens()
-        max_tokens = agent.context.max_tokens
+        total_messages = len(agent.context_manager.get_messages())
+        estimated_tokens = agent.context_manager.estimate_tokens()
+        max_tokens = agent.context_manager.max_tokens
         token_usage_pct = (estimated_tokens / max_tokens * 100) if max_tokens > 0 else 0
 
         # 工具统计
-        tool_count = len(agent.tools.tools)
+        tool_count = len(agent.tool_manager.tools)
 
         # Todo 统计
         todos = agent.todo_manager.get_all()
@@ -119,7 +119,7 @@ class StatusCommand(Command):
             "💬 Conversation:",
             f"  Messages: {total_messages}",
             f"  Tokens: ~{estimated_tokens:,} / {max_tokens:,} ({token_usage_pct:.1f}%)",
-            f"  Summary length: {len(agent.context.summary)} chars",
+            f"  Summary length: {len(agent.context_manager.summary)} chars",
             "",
             "🔧 Tools:",
             f"  Total: {tool_count}",
