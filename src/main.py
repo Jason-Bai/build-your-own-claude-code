@@ -12,6 +12,7 @@ try:
     DOTENV_AVAILABLE = True
 except ImportError:
     DOTENV_AVAILABLE = False
+
     def load_dotenv(**kwargs):
         # Fallback: do nothing if dotenv not available
         pass
@@ -48,20 +49,31 @@ def load_config(config_path: str = "config.json") -> dict:
         # 从 .env 文件读取配置并覆盖 config.json
         # 注意：这里用 os.environ.get() 而不是 os.getenv() 来获取 .env 文件中的值
         model_config = config.get("model", {})
-        model_config["ANTHROPIC_API_KEY"] = os.environ.get("ANTHROPIC_API_KEY") or model_config.get("ANTHROPIC_API_KEY")
-        model_config["ANTHROPIC_MODEL"] = os.environ.get("ANTHROPIC_MODEL") or model_config.get("ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
-        model_config["ANTHROPIC_API_BASE"] = os.environ.get("ANTHROPIC_API_BASE") or model_config.get("ANTHROPIC_API_BASE", "https://api.anthropic.com/v1")
+        model_config["ANTHROPIC_API_KEY"] = os.environ.get(
+            "ANTHROPIC_API_KEY") or model_config.get("ANTHROPIC_API_KEY")
+        model_config["ANTHROPIC_MODEL"] = os.environ.get("ANTHROPIC_MODEL") or model_config.get(
+            "ANTHROPIC_MODEL", "claude-sonnet-4-5-20250929")
+        model_config["ANTHROPIC_API_BASE"] = os.environ.get("ANTHROPIC_API_BASE") or model_config.get(
+            "ANTHROPIC_API_BASE", "https://api.anthropic.com/v1")
 
-        model_config["OPENAI_API_KEY"] = os.environ.get("OPENAI_API_KEY") or model_config.get("OPENAI_API_KEY")
-        model_config["OPENAI_MODEL"] = os.environ.get("OPENAI_MODEL") or model_config.get("OPENAI_MODEL", "gpt-4o")
-        model_config["OPENAI_API_BASE"] = os.environ.get("OPENAI_API_BASE") or model_config.get("OPENAI_API_BASE", "https://api.openai.com/v1")
+        model_config["OPENAI_API_KEY"] = os.environ.get(
+            "OPENAI_API_KEY") or model_config.get("OPENAI_API_KEY")
+        model_config["OPENAI_MODEL"] = os.environ.get(
+            "OPENAI_MODEL") or model_config.get("OPENAI_MODEL", "gpt-4o")
+        model_config["OPENAI_API_BASE"] = os.environ.get(
+            "OPENAI_API_BASE") or model_config.get("OPENAI_API_BASE", "https://api.openai.com/v1")
 
-        model_config["GOOGLE_API_KEY"] = os.environ.get("GOOGLE_API_KEY") or model_config.get("GOOGLE_API_KEY")
-        model_config["GOOGLE_MODEL"] = os.environ.get("GOOGLE_MODEL") or model_config.get("GOOGLE_MODEL", "gemini-1.5-flash")
-        model_config["GOOGLE_API_BASE"] = os.environ.get("GOOGLE_API_BASE") or model_config.get("GOOGLE_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
+        model_config["GOOGLE_API_KEY"] = os.environ.get(
+            "GOOGLE_API_KEY") or model_config.get("GOOGLE_API_KEY")
+        model_config["GOOGLE_MODEL"] = os.environ.get(
+            "GOOGLE_MODEL") or model_config.get("GOOGLE_MODEL", "gemini-1.5-flash")
+        model_config["GOOGLE_API_BASE"] = os.environ.get("GOOGLE_API_BASE") or model_config.get(
+            "GOOGLE_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
 
-        model_config["temperature"] = float(os.environ.get("TEMPERATURE") or model_config.get("temperature", 0.7))
-        model_config["max_tokens"] = int(os.environ.get("MAX_TOKENS") or model_config.get("max_tokens", 4000))
+        model_config["temperature"] = float(os.environ.get(
+            "TEMPERATURE") or model_config.get("temperature", 0.7))
+        model_config["max_tokens"] = int(os.environ.get(
+            "MAX_TOKENS") or model_config.get("max_tokens", 4000))
 
         config["model"] = model_config
 
@@ -257,7 +269,8 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
 
     # 如果选择的提供商不可用，尝试其他的
     elif anthropic_api_key:
-        OutputFormatter.warning("Anthropic API key found but anthropic package not installed")
+        OutputFormatter.warning(
+            "Anthropic API key found but anthropic package not installed")
         OutputFormatter.warning("Install with: pip install anthropic")
         # 继续尝试其他提供商
         if openai_api_key and check_provider_available("openai"):
@@ -272,7 +285,8 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
             model_name = google_model
 
     elif openai_api_key:
-        OutputFormatter.warning("OpenAI API key found but openai package not installed")
+        OutputFormatter.warning(
+            "OpenAI API key found but openai package not installed")
         OutputFormatter.warning("Install with: pip install openai")
         # 继续尝试其他提供商
         if google_api_key and check_provider_available("google"):
@@ -284,18 +298,23 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     # 如果还是没找到，报错并显示配置指南
     if not selected_provider or not api_key:
         OutputFormatter.error("No API provider configuration found")
-        OutputFormatter.info("Please configure using one of the following methods:")
-        OutputFormatter.info("Method 1 - Environment Variables (Highest Priority):")
+        OutputFormatter.info(
+            "Please configure using one of the following methods:")
+        OutputFormatter.info(
+            "Method 1 - Environment Variables (Highest Priority):")
         OutputFormatter.info("  export ANTHROPIC_API_KEY='your-key'")
-        OutputFormatter.info("  export ANTHROPIC_MODEL='claude-sonnet-4-5-20250929'  # optional")
-        OutputFormatter.info("Method 2 - .env file (copy .env.example to .env):")
+        OutputFormatter.info(
+            "  export ANTHROPIC_MODEL='claude-sonnet-4-5-20250929'  # optional")
+        OutputFormatter.info(
+            "Method 2 - .env file (copy .env.example to .env):")
         OutputFormatter.info("  ANTHROPIC_API_KEY=your-key")
         OutputFormatter.info("  ANTHROPIC_MODEL=claude-sonnet-4-5-20250929")
         OutputFormatter.info("Method 3 - config.json (fallback):")
         OutputFormatter.info("  {")
         OutputFormatter.info("    \"model\": {")
         OutputFormatter.info("      \"ANTHROPIC_API_KEY\": \"your-key\",")
-        OutputFormatter.info("      \"ANTHROPIC_MODEL\": \"claude-sonnet-4-5-20250929\"")
+        OutputFormatter.info(
+            "      \"ANTHROPIC_MODEL\": \"claude-sonnet-4-5-20250929\"")
         OutputFormatter.info("    }")
         OutputFormatter.info("  }")
         sys.exit(1)
@@ -316,7 +335,8 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     if args:
         if args.dangerously_skip_permissions:
             permission_mode = PermissionMode.SKIP_ALL
-            OutputFormatter.warning("Running with --dangerously-skip-permissions")
+            OutputFormatter.warning(
+                "Running with --dangerously-skip-permissions")
         elif args.auto_approve_all:
             permission_mode = PermissionMode.AUTO_APPROVE_ALL
             OutputFormatter.warning("Auto-approving all tools")
@@ -392,7 +412,6 @@ async def main():
     else:
         OutputFormatter.set_level(OutputLevel.NORMAL)
 
-
     # 加载配置
     config = load_config(args.config)
 
@@ -437,14 +456,16 @@ async def main():
                     f"[System: Project Context]\n\n{context_content}"
                 )
 
-                OutputFormatter.success(f"Auto-loaded CLAUDE.md ({len(context_content)} chars)")
+                OutputFormatter.success(
+                    f"Auto-loaded CLAUDE.md ({len(context_content)} chars)")
             except Exception as e:
                 OutputFormatter.warning(f"Failed to load CLAUDE.md: {e}")
         else:
             claude_md_info = "ℹ️  No CLAUDE.md found. Use /init to create one."
 
     # 显示欢迎信息（包含CLAUDE.md信息）
-    OutputFormatter.print_welcome(agent.client.model_name, provider_name, total_tools, claude_md_info)
+    OutputFormatter.print_welcome(
+        agent.client.model_name, provider_name, total_tools, claude_md_info)
 
     # 主循环
     try:
@@ -463,7 +484,7 @@ async def main():
                     continue
 
                 # 显示用户输入
-                OutputFormatter.print_user_input(user_input)
+                # OutputFormatter.print_user_input(user_input)
 
                 # 检查是否是命令
                 if command_registry.is_command(user_input):
@@ -475,7 +496,18 @@ async def main():
                 # 普通对话 - 打印 AI 响应头
                 OutputFormatter.print_separator()
                 OutputFormatter.print_assistant_response_header()
-                stats = await agent.run(user_input, verbose=True)
+                result = await agent.run(user_input, verbose=True)
+
+                # 统一输出处理
+                if isinstance(result, dict):
+                    # 新的返回格式：包含final_response
+                    final_response = result.get("final_response", "")
+                    if final_response:
+                        OutputFormatter.print_assistant_response(final_response)
+                    stats = result.get("agent_state", {})
+                else:
+                    # 旧的返回格式：直接是stats
+                    stats = result
 
                 # 自动保存（可选）
                 if config.get("auto_save", False):

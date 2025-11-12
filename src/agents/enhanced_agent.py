@@ -119,16 +119,14 @@ class EnhancedAgent:
                 # 7. 解析响应
                 text_blocks, tool_uses = self._parse_response(response)
 
-                # 8. 输出文本
-                if text_blocks and verbose:
-                    for text in text_blocks:
-                        print(text, end="", flush=True)
+                # 8. 暂存文本（不在循环中打印）
+                final_response = ""
+                if text_blocks:
+                    final_response = text_blocks[0]
 
                 # 9. 如果没有工具调用，完成
                 if not tool_uses:
                     self.context_manager.add_assistant_message(response.content)
-                    if verbose:
-                        print()
                     self._transition_state(AgentState.COMPLETED)
 
                     # Trigger: on_agent_end
@@ -139,7 +137,13 @@ class EnhancedAgent:
                             success=True
                         )
                     )
-                    break
+
+                    # 返回结构化数据给main.py，由main.py统一输出
+                    return {
+                        "final_response": final_response,
+                        "agent_state": self.state_manager.get_statistics(),
+                        "context": self.context_manager.get_context_info(),
+                    }
 
                 # 10. 执行工具
                 self._transition_state(AgentState.USING_TOOL)
@@ -151,8 +155,6 @@ class EnhancedAgent:
 
                 # 12. 继续下一轮
                 self._transition_state(AgentState.THINKING)
-                if verbose:
-                    print()
 
             except Exception as e:
                 if verbose:
