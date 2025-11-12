@@ -9,6 +9,7 @@ from .state import AgentState, AgentStateManager, ToolCall
 from .context_manager import AgentContextManager
 from .tool_manager import AgentToolManager
 from .permission_manager import PermissionManager, PermissionMode
+from .feedback import AgentFeedback, FeedbackLevel
 from ..hooks import HookManager, HookContextBuilder, HookEvent
 
 if TYPE_CHECKING:
@@ -70,6 +71,10 @@ class EnhancedAgent:
         Returns:
             执行结果统计
         """
+        # 初始化反馈收集器
+        feedback_level = FeedbackLevel.MINIMAL if verbose else FeedbackLevel.SILENT
+        feedback = AgentFeedback(level=feedback_level)
+
         # Initialize hook context builder for this run
         self._hook_context_builder = HookContextBuilder()
 
@@ -87,6 +92,7 @@ class EnhancedAgent:
 
         # 2. 状态：开始思考
         self._transition_state(AgentState.THINKING)
+        feedback.add_thinking()
 
         # Trigger: on_agent_start
         await self.hook_manager.trigger(
@@ -141,13 +147,14 @@ class EnhancedAgent:
                     # 返回结构化数据给main.py，由main.py统一输出
                     return {
                         "final_response": final_response,
+                        "feedback": feedback.get_all(),
                         "agent_state": self.state_manager.get_statistics(),
                         "context": self.context_manager.get_context_info(),
                     }
 
                 # 10. 执行工具
                 self._transition_state(AgentState.USING_TOOL)
-                tool_results = await self._execute_tools(tool_uses, verbose)
+                tool_results = await self._execute_tools(tool_uses, verbose, feedback)
 
                 # 11. 添加消息到上下文
                 self.context_manager.add_assistant_message(response.content)
@@ -181,8 +188,13 @@ class EnhancedAgent:
             )
         )
 
-        # 返回统计信息
-        return self.get_statistics()
+        # 返回统计信息（包含反馈）
+        return {
+            "final_response": "",
+            "feedback": feedback.get_all(),
+            "agent_state": self.state_manager.get_statistics(),
+            "context": self.context_manager.get_context_info(),
+        }
 
     async def _call_llm(self) -> ModelResponse:
         """调用 LLM"""
@@ -217,7 +229,39 @@ class EnhancedAgent:
 
         return text_blocks, tool_uses
 
-    async def _execute_tools(self, tool_uses: List[Dict], verbose: bool = True) -> List[Dict]:
+    def _generate_brief_description(self, tool_name: str, tool_input: Dict) -> str:
+        """生成工具调用的简短描述用于反馈"""
+        if not isinstance(tool_input, dict):
+            return str(tool_input)[:50]
+
+        # 为常见工具生成简洁描述
+        if tool_name == "Bash":
+            command = tool_input.get("command", "")[:40]
+            return f"execute: {command}"
+        elif tool_name == "Read":
+            file_path = tool_input.get("file_path", "")
+            return f"read: {file_path}"
+        elif tool_name == "Write":
+            file_path = tool_input.get("file_path", "")
+            return f"write: {file_path}"
+        elif tool_name == "Edit":
+            file_path = tool_input.get("file_path", "")
+            return f"edit: {file_path}"
+        elif tool_name == "Glob":
+            pattern = tool_input.get("pattern", "")[:40]
+            return f"search: {pattern}"
+        elif tool_name == "Grep":
+            pattern = tool_input.get("pattern", "")[:40]
+            return f"grep: {pattern}"
+        elif tool_name == "TodoWrite":
+            return "update todos"
+        else:
+            # 通用描述
+            first_key = next(iter(tool_input.keys())) if tool_input else "?"
+            first_val = str(tool_input.get(first_key, ""))[:30]
+            return f"{first_key}: {first_val}"
+
+    async def _execute_tools(self, tool_uses: List[Dict], verbose: bool = True, feedback: "AgentFeedback" = None) -> List[Dict]:
         """执行工具调用"""
         tool_results = []
 
@@ -233,6 +277,13 @@ class EnhancedAgent:
                 input=tool_input
             )
             self.state_manager.record_tool_call(tool_call)
+
+            # 生成简短描述用于反馈
+            brief_description = self._generate_brief_description(tool_name, tool_input)
+
+            # 添加工具调用反馈
+            if feedback:
+                feedback.add_tool_call(tool_name, brief_description)
 
             # Trigger: on_tool_select
             await self.hook_manager.trigger(
@@ -268,6 +319,9 @@ class EnhancedAgent:
                         result=None,
                         error=deny_message
                     )
+                    # 添加权限拒绝反馈
+                    if feedback:
+                        feedback.add_error(f"Permission denied: {deny_message}")
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_id,
@@ -311,6 +365,9 @@ class EnhancedAgent:
                         result=result.output
                     )
                 )
+                # 添加工具完成反馈
+                if feedback:
+                    feedback.add_tool_completed(tool_name)
             else:
                 await self.hook_manager.trigger(
                     HookEvent.ON_TOOL_ERROR,
@@ -321,6 +378,9 @@ class EnhancedAgent:
                         error=result.error
                     )
                 )
+                # 添加工具错误反馈
+                if feedback:
+                    feedback.add_error(f"{tool_name}: {result.error}")
 
             # 特殊处理：TodoWrite 更新本地状态
             if tool_name == "TodoWrite" and result.success:

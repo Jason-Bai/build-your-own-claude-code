@@ -500,7 +500,13 @@ async def main():
 
                 # 统一输出处理
                 if isinstance(result, dict):
-                    # 新的返回格式：包含final_response
+                    # 新的返回格式：包含final_response和feedback
+                    # 1. 输出反馈信息（如有）
+                    feedback_messages = result.get("feedback", [])
+                    for feedback_msg in feedback_messages:
+                        OutputFormatter.info(feedback_msg)
+
+                    # 2. 输出最终响应
                     final_response = result.get("final_response", "")
                     if final_response:
                         OutputFormatter.print_assistant_response(final_response)

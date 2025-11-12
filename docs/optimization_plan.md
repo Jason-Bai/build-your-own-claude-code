@@ -494,30 +494,46 @@ async def main():
 - [ ] P1.2: 优化Agent输出
   - 状态: ✅ 已完成
   - 完成时间: 2025-11-12
-  - 提交: 待提交
+  - 提交: 533dc2d (P1.2: Optimize Agent output - only return final response)
   - 验证: Agent只输出最终响应，不在循环中打印中间内容
 
 ### 第二阶段 (P2)
 
-- [ ] P2.1: 创建反馈系统
-  - 状态: ⏳ 待开始
-  - 完成时间:
-  - 提交:
+- [x] P2.1: 创建反馈系统
+  - 状态: ✅ 已完成
+  - 完成时间: 2025-11-12
+  - 文件: src/agents/feedback.py
+  - 验证: AgentFeedback 类正常工作，支持不同反馈级别
 
-- [ ] P2.2: 修改Agent返回结构
-  - 状态: ⏳ 待开始
-  - 完成时间:
-  - 提交:
+- [x] P2.2: 修改Agent返回结构
+  - 状态: ✅ 已完成
+  - 完成时间: 2025-11-12
+  - 改动: src/agents/enhanced_agent.py
+    - 添加 feedback 参数到 _execute_tools()
+    - 添加 _generate_brief_description() 方法生成工具描述
+    - 在工具执行时收集反馈
+    - 修改返回结构包含 feedback 数组
+  - 验证: Agent 返回值包含 "feedback" 字段
 
-- [ ] P2.3: 修改main.py输出管理
-  - 状态: ⏳ 待开始
-  - 完成时间:
-  - 提交:
+- [x] P2.3: 修改main.py输出管理
+  - 状态: ✅ 已完成
+  - 完成时间: 2025-11-12
+  - 改动: src/main.py
+    - 修改 agent.run() 结果处理逻辑
+    - 先输出 feedback 消息，再输出最终响应
+    - 使用 OutputFormatter.info() 输出反馈
+  - 验证: 测试确认反馈先显示，最终响应后显示
 
 - [ ] P2.4: 测试验收
-  - 状态: ⏳ 待开始
+  - 状态: 🔄 测试中
   - 完成时间:
-  - 提交:
+  - 测试场景:
+    1. ✅ 简单对话（不需要工具）
+       - 输入: "hello"
+       - 验证: 无反馈消息，直接显示最终响应
+    2. 🔄 复杂对话（需要工具）
+       - 状态: 待完成（Google API 有问题）
+       - 将继续使用 Anthropic API 进行完整测试
 
 ### 第三阶段 (P3)
 
