@@ -393,8 +393,6 @@ async def main():
     else:
         OutputFormatter.set_level(OutputLevel.NORMAL)
 
-    OutputFormatter.info("🤖 Build Your Own Claude Code - Enhanced Edition")
-    print("=" * 50)
 
     # 加载配置
     config = load_config(args.config)
@@ -411,15 +409,23 @@ async def main():
     # 创建 CLI 上下文
     cli_context = CLIContext(agent, config={"persistence": persistence})
 
-    # 显示欢迎信息
+    # 显示欢迎信息 - 使用新的格式化方法
     builtin_tools = len(agent.tool_manager.tools)
     mcp_tools = len(agent.mcp_client.tools) if agent.mcp_client else 0
     total_tools = builtin_tools + mcp_tools
 
-    OutputFormatter.success(f"Loaded {total_tools} tools")
-    print(f"  - Built-in: {builtin_tools}")
-    if mcp_tools > 0:
-        print(f"  - MCP: {mcp_tools}")
+    # 推断提供商类型
+    client_type = type(agent.client).__name__
+    if "Anthropic" in client_type:
+        provider_name = "anthropic"
+    elif "OpenAI" in client_type:
+        provider_name = "openai"
+    elif "Google" in client_type:
+        provider_name = "google"
+    else:
+        provider_name = "unknown"
+
+    OutputFormatter.print_welcome(agent.client.model_name, provider_name, total_tools)
 
     # 🆕 自动加载 CLAUDE.md（如果存在且配置启用）
     if config.get("auto_load_context", True):
@@ -446,10 +452,16 @@ async def main():
     try:
         while True:
             try:
-                user_input = input("You: ").strip()
+                # 打印分隔线和用户输入提示
+                OutputFormatter.print_separator()
+                OutputFormatter.print_user_prompt()
+                user_input = input().strip()
 
                 if not user_input:
                     continue
+
+                # 显示用户输入
+                OutputFormatter.print_user_input(user_input)
 
                 # 检查是否是命令
                 if command_registry.is_command(user_input):
@@ -459,8 +471,9 @@ async def main():
                     print()
                     continue
 
-                # 普通对话
-                print()
+                # 普通对话 - 打印 AI 响应头
+                OutputFormatter.print_separator()
+                OutputFormatter.print_assistant_response_header()
                 stats = await agent.run(user_input, verbose=True)
 
                 # 自动保存（可选）

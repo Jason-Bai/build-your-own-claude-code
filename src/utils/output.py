@@ -93,3 +93,43 @@ class OutputFormatter:
             print(f"\n{'='*50}")
             print(f"{title}")
             print(f"{'='*50}")
+
+    @classmethod
+    def print_separator(cls):
+        """打印对话分隔线"""
+        print("━" * 50)
+
+    @classmethod
+    def print_welcome(cls, model_name: str, provider: str, tools_count: int):
+        """打印欢迎信息"""
+        print("\n🤖 Build Your Own Claude Code - Enhanced Edition")
+        print("━" * 50)
+        print(f"✓ Model: {model_name} (provider: {provider})")
+        print(f"✓ Tools: {tools_count} built-in")
+        print("ℹ️  Commands: Type /help to see available commands")
+        print("━" * 50 + "\n")
+
+    @classmethod
+    def print_user_prompt(cls):
+        """打印用户输入提示（不带换行，等待输入）"""
+        print("👤 You: ", end="", flush=True)
+
+    @classmethod
+    def print_user_input(cls, text: str):
+        """打印用户输入的内容"""
+        # 如果文本为空，只打印换行
+        if text:
+            print(text)
+        print()
+
+    @classmethod
+    def print_assistant_response_header(cls):
+        """打印 AI 响应头"""
+        print("🤖 Assistant:")
+
+    @classmethod
+    def print_assistant_response(cls, text: str):
+        """打印 AI 响应内容"""
+        print(text)
+        print()
+
