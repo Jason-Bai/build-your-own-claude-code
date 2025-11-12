@@ -521,10 +521,10 @@ hook_manager.register(HookEvent.ON_TOOL_EXECUTE, metrics_hook, priority=1)
 支持用户通过配置文件定义和加载自定义 Hook：
 
 ```
-~/.claude/settings.json              # 用户级设置
-.claude/settings.json                # 项目级设置
-.claude/settings.local.json          # 本地设置（不提交）
-Enterprise managed policy settings    # 企业策略
+~/.tiny-claude/settings.json              # 用户级设置
+.tiny-claude/settings.json                # 项目级设置
+.tiny-claude/settings.local.json          # 本地设置（不提交）
+Enterprise managed policy settings         # 企业策略
 ```
 
 ### 配置文件格式
@@ -555,11 +555,11 @@ Enterprise managed policy settings    # 企业策略
 ```
 企业策略 (最高)
     ↓
-~/.claude/settings.json
+~/.tiny-claude/settings.json
     ↓
-.claude/settings.json
+.tiny-claude/settings.json
     ↓
-.claude/settings.local.json (最低)
+.tiny-claude/settings.local.json (最低)
 ```
 
 ### 核心实现方案
@@ -576,9 +576,9 @@ class HookConfigLoader:
 
         加载顺序：
         1. 企业策略配置
-        2. ~/.claude/settings.json (用户全局)
-        3. .claude/settings.json (项目级)
-        4. .claude/settings.local.json (本地)
+        2. ~/.tiny-claude/settings.json (用户全局)
+        3. .tiny-claude/settings.json (项目级)
+        4. .tiny-claude/settings.local.json (本地)
         """
         configs = self._collect_configs()
 
