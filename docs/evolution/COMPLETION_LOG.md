@@ -114,6 +114,7 @@ Phase 6: 多Agent编排 (待开始) ⏳
   - 初始化 hook_manager
   - ON_USER_INPUT 事件
   - ON_AGENT_START 事件
+  - ON_THINKING 事件 (在 _call_llm 前触发)
   - ON_AGENT_END 事件
   - ON_ERROR 事件
   - ON_SHUTDOWN 事件
@@ -121,6 +122,12 @@ Phase 6: 多Agent编排 (待开始) ⏳
   - ON_TOOL_EXECUTE 事件
   - ON_TOOL_RESULT/ERROR 事件
   - ON_PERMISSION_CHECK 事件
+- [x] 应用级 Hook 初始化 (`src/main.py`)
+  - 导入 HookManager 和 HookEvent
+  - 创建 _setup_hooks() 函数
+  - 在 initialize_agent() 中初始化 HookManager
+  - 注册应用级 Hook 处理器
+  - Verbose 模式下的日志 Hook
 - [x] 编写单元测试 (`tests/test_hooks.py`)
   - HookContext 创建、序列化、反序列化
   - HookContextBuilder 构建、继承、重置
@@ -202,10 +209,11 @@ Phase 6: 多Agent编排 (待开始) ⏳
 
 **实现成果**:
 - 4 个核心模块: types.py, manager.py, builder.py, __init__.py
-- 集成 10+ 个 Hook 事件到 EnhancedAgent
+- 集成 11 个 Hook 事件到 EnhancedAgent
 - 700+ 行单元和集成测试代码
 - 完整的错误隔离和优先级控制
 - 支持链式追踪和上下文继承
+- **main.py 应用级集成**: HookManager 初始化、Hook 处理器注册、Verbose 日志支持
 
 **遇到的问题**:
 - 无重大问题，设计和实现进展顺利
