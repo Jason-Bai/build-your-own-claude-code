@@ -448,10 +448,14 @@ async def main():
 
     # 主循环
     try:
+        is_first_iteration = True
         while True:
             try:
-                # 打印分隔线和用户输入提示
-                OutputFormatter.print_separator()
+                # 第一次迭代时不打印分隔线，后续迭代打印
+                if not is_first_iteration:
+                    OutputFormatter.print_separator()
+                is_first_iteration = False
+
                 OutputFormatter.print_user_prompt()
                 user_input = input().strip()
 
