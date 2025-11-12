@@ -46,5 +46,3 @@ class QuietCommand(Command):
         else:
             current = OutputFormatter.level.name.lower()
             return f"ℹ️  Current level: {current}. Usage: /quiet on|off"
-</content>
-<parameter name="file_path">/Users/baiyu/workspaces/laboratory/build-your-own-claude-code/src/commands/output_commands.py
