@@ -100,13 +100,17 @@ class OutputFormatter:
         print("━" * 50)
 
     @classmethod
-    def print_welcome(cls, model_name: str, provider: str, tools_count: int):
+    def print_welcome(cls, model_name: str, provider: str, tools_count: int, claude_md_info: str = None):
         """打印欢迎信息"""
         print("\n🤖 Build Your Own Claude Code - Enhanced Edition")
         print("━" * 50)
         print(f"✓ Model: {model_name} (provider: {provider})")
         print(f"✓ Tools: {tools_count} built-in")
+        print()
         print("ℹ️  Commands: Type /help to see available commands")
+        if claude_md_info:
+            print()
+            print(claude_md_info)
         print("━" * 50 + "\n")
 
     @classmethod

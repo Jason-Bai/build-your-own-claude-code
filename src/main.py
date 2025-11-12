@@ -424,9 +424,8 @@ async def main():
     else:
         provider_name = "unknown"
 
-    OutputFormatter.print_welcome(agent.client.model_name, provider_name, total_tools)
-
-    # 🆕 自动加载 CLAUDE.md（如果存在且配置启用）
+    # 准备欢迎信息（包含CLAUDE.md状态）
+    claude_md_info = None
     if config.get("auto_load_context", True):
         claude_md_path = Path.cwd() / "CLAUDE.md"
         if claude_md_path.exists():
@@ -442,7 +441,10 @@ async def main():
             except Exception as e:
                 OutputFormatter.warning(f"Failed to load CLAUDE.md: {e}")
         else:
-            OutputFormatter.info("No CLAUDE.md found. Use /init to create one.")
+            claude_md_info = "ℹ️  No CLAUDE.md found. Use /init to create one."
+
+    # 显示欢迎信息（包含CLAUDE.md信息）
+    OutputFormatter.print_welcome(agent.client.model_name, provider_name, total_tools, claude_md_info)
 
     # 主循环
     try:
