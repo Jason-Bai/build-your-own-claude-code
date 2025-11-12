@@ -184,6 +184,16 @@ class EnhancedAgent:
 
     async def _call_llm(self) -> ModelResponse:
         """调用 LLM"""
+        # Trigger: on_thinking
+        await self.hook_manager.trigger(
+            HookEvent.ON_THINKING,
+            self._hook_context_builder.build(
+                HookEvent.ON_THINKING,
+                message_count=len(self.context_manager.get_messages()),
+                tool_count=len(self.tool_manager.get_tool_definitions())
+            )
+        )
+
         return await self.client.create_message(
             system=self.context_manager.system_prompt,
             messages=self.context_manager.get_messages(),

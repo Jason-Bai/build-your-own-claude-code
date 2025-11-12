@@ -28,6 +28,7 @@ from .prompts import get_system_prompt
 from .mcps import MCPClient, MCPServerConfig
 from .persistence import ConversationPersistence
 from .utils import OutputFormatter, OutputLevel
+from .hooks import HookManager, HookEvent, HookContextBuilder
 
 
 def load_config(config_path: str = "config.json") -> dict:
@@ -84,6 +85,43 @@ def _resolve_env_vars(obj):
         return [_resolve_env_vars(item) for item in obj]
     else:
         return obj
+
+
+def _setup_hooks(hook_manager: HookManager, config: dict, verbose: bool = False) -> None:
+    """设置应用级别的 Hook 处理器
+
+    Args:
+        hook_manager: HookManager 实例
+        config: 应用配置
+        verbose: 是否打印 Hook 活动
+    """
+    # 如果启用了详细输出，注册日志 Hook
+    if verbose:
+        async def log_hook(context):
+            OutputFormatter.info(
+                f"📍 Hook: {context.event.value} | "
+                f"request_id={context.request_id[:8]} | "
+                f"data_keys={list(context.data.keys())}"
+            )
+
+        # 为主要事件注册日志 Hook（低优先级）
+        for event in [
+            HookEvent.ON_USER_INPUT,
+            HookEvent.ON_AGENT_START,
+            HookEvent.ON_AGENT_END,
+            HookEvent.ON_ERROR,
+            HookEvent.ON_TOOL_SELECT,
+            HookEvent.ON_TOOL_EXECUTE,
+        ]:
+            hook_manager.register(event, log_hook, priority=1)
+
+    # 注册错误处理 Hook
+    async def error_handler(event, error, context):
+        OutputFormatter.error(
+            f"Hook error in {event.value}: {error.__class__.__name__}: {str(error)}"
+        )
+
+    hook_manager.register_error_handler(error_handler)
 
 
 def parse_args():
@@ -238,14 +276,21 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
             mcp_client = None
 
     # 创建 EnhancedAgent
+    # 初始化 Hook 管理器
+    hook_manager = HookManager()
+
     agent = EnhancedAgent(
         client=client,
         system_prompt=get_system_prompt(),
         max_turns=config.get("max_turns", 20),
         max_context_tokens=int(client.context_window * 0.8),
         mcp_client=mcp_client,
-        permission_mode=permission_mode
+        permission_mode=permission_mode,
+        hook_manager=hook_manager
     )
+
+    # 设置应用级别的 Hook 处理器
+    _setup_hooks(hook_manager, config, verbose=args.verbose if args else False)
 
     # 注册内置工具
     agent.tool_manager.register_tools([
