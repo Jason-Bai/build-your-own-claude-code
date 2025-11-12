@@ -435,9 +435,295 @@ hook_manager.register(HookEvent.ON_TOOL_EXECUTE, metrics_hook, priority=1)
 
 ---
 
+## 🔧 扩展设计：用户 Hook 配置
+
+> 📝 **说明**: 当前 Phase 1 设计为系统级 Hook。未来支持用户端 Hook 配置需要额外的加载机制。
+>
+> ⚠️ **范围**: 本 Phase 不包含，建议在 Phase 2 或单独作为 Phase 1.5 实现
+
+### 设计目标
+
+支持用户通过配置文件定义和加载自定义 Hook：
+
+```
+~/.claude/settings.json              # 用户级设置
+.claude/settings.json                # 项目级设置
+.claude/settings.local.json          # 本地设置（不提交）
+Enterprise managed policy settings    # 企业策略
+```
+
+### 配置文件格式
+
+```json
+{
+  "hooks": {
+    "custom_handlers": [
+      {
+        "event": "tool.execute",
+        "handler": "my_module:my_hook_handler",
+        "priority": 50,
+        "enabled": true
+      },
+      {
+        "event": "agent.error",
+        "handler": "monitoring:error_reporter",
+        "priority": 100,
+        "enabled": true
+      }
+    ]
+  }
+}
+```
+
+### 配置优先级
+
+```
+企业策略 (最高)
+    ↓
+~/.claude/settings.json
+    ↓
+.claude/settings.json
+    ↓
+.claude/settings.local.json (最低)
+```
+
+### 核心实现方案
+
+#### 1. Hook 配置加载器 (`src/hooks/config_loader.py`)
+
+```python
+class HookConfigLoader:
+    """从配置文件加载用户 Hook"""
+
+    async def load_hooks(self, hook_manager: HookManager):
+        """
+        按优先级加载所有 Hook 配置
+
+        加载顺序：
+        1. 企业策略配置
+        2. ~/.claude/settings.json (用户全局)
+        3. .claude/settings.json (项目级)
+        4. .claude/settings.local.json (本地)
+        """
+        configs = self._collect_configs()
+
+        for config in configs:
+            await self._load_config_file(config, hook_manager)
+
+    async def _load_config_file(self, config_path: str, hook_manager: HookManager):
+        """从单个配置文件加载 Hook"""
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+
+        for handler_config in config.get('hooks', {}).get('custom_handlers', []):
+            if not handler_config.get('enabled', True):
+                continue
+
+            # 动态加载 Handler
+            handler = await self._load_handler(
+                handler_config['handler']
+            )
+
+            # 注册到管理器
+            hook_manager.register(
+                HookEvent[handler_config['event']],
+                handler,
+                priority=handler_config.get('priority', 0)
+            )
+
+    async def _load_handler(self, handler_path: str):
+        """
+        动态加载 Hook Handler
+
+        格式: "module_name:function_name"
+        例如: "monitoring:error_reporter"
+              → from monitoring import error_reporter
+        """
+        module_name, func_name = handler_path.split(':')
+        module = __import__(module_name)
+        return getattr(module, func_name)
+```
+
+#### 2. Hook 验证器 (`src/hooks/validator.py`)
+
+```python
+class HookConfigValidator:
+    """验证 Hook 配置的安全性"""
+
+    def validate_handler_path(self, handler_path: str) -> bool:
+        """
+        检查 Handler 路径是否安全
+
+        防止：
+        - 加载恶意模块
+        - 访问私有函数
+        - 引入不允许的包
+        """
+        module_name, func_name = handler_path.split(':')
+
+        # 黑名单检查
+        forbidden_modules = [
+            'os', 'sys', 'subprocess', 'socket',
+            '__builtin__', 'importlib'
+        ]
+
+        if module_name in forbidden_modules:
+            raise SecurityError(f"Forbidden module: {module_name}")
+
+        # 私有函数检查
+        if func_name.startswith('_'):
+            raise SecurityError(f"Cannot load private function: {func_name}")
+
+        return True
+
+    def validate_priority(self, priority: int) -> bool:
+        """验证优先级范围"""
+        if not -1000 <= priority <= 1000:
+            raise ValueError("Priority must be between -1000 and 1000")
+        return True
+```
+
+#### 3. 安全加载 (`src/hooks/secure_loader.py`)
+
+```python
+class SecureHookLoader:
+    """安全地加载用户定义的 Hook"""
+
+    async def load_hook(self, handler_path: str, sandbox: bool = True):
+        """
+        安全加载 Hook Handler
+
+        Args:
+            handler_path: "module:function" 格式
+            sandbox: 是否在沙箱中加载
+        """
+        if sandbox:
+            # 在受限环境中加载
+            return await self._load_in_sandbox(handler_path)
+        else:
+            # 直接加载（需要信任）
+            return await self._load_direct(handler_path)
+
+    async def _load_in_sandbox(self, handler_path: str):
+        """在沙箱中加载 Hook"""
+        # 方案 1: AST 检查（轻量）
+        handler = await self._load_direct(handler_path)
+        self._audit_handler(handler)
+        return handler
+
+    def _audit_handler(self, handler: Callable):
+        """审计 Handler 的安全性"""
+        import inspect
+        source = inspect.getsource(handler)
+        # AST 分析，检查是否有危险操作
+        ...
+```
+
+#### 4. 集成到应用初始化
+
+```python
+# src/main.py
+
+async def main():
+    """主函数"""
+    args = parse_args()
+
+    # 1. 创建 Hook 管理器
+    hook_manager = HookManager()
+
+    # 2. 加载系统级 Hook（日志等）
+    logging_hook = LoggingHook(...)
+    hook_manager.register(HookEvent.ON_USER_INPUT, logging_hook)
+
+    # 3. 💡 加载用户 Hook 配置 (新增)
+    config_loader = HookConfigLoader()
+    await config_loader.load_hooks(hook_manager)
+
+    # 4. 创建 Agent
+    agent = EnhancedAgent(..., hook_manager=hook_manager)
+
+    # ... 后续逻辑
+```
+
+### 使用示例
+
+#### 用户创建自定义 Hook
+
+```python
+# my_hooks.py
+async def custom_logger(context: HookContext):
+    """自定义日志处理"""
+    print(f"Custom: {context.event} - {context.data}")
+
+async def error_alert(context: HookContext):
+    """错误告警"""
+    if context.event == HookEvent.ON_ERROR:
+        send_alert(context.data['error'])
+```
+
+#### 用户配置文件
+
+```json
+// .claude/settings.json
+{
+  "hooks": {
+    "custom_handlers": [
+      {
+        "event": "agent.error",
+        "handler": "my_hooks:error_alert",
+        "priority": 100,
+        "enabled": true
+      },
+      {
+        "event": "tool.execute",
+        "handler": "my_hooks:custom_logger",
+        "priority": 50,
+        "enabled": true
+      }
+    ]
+  }
+}
+```
+
+### 安全考虑
+
+1. **代码审计**: 加载前进行 AST 分析
+2. **沙箱执行**: 关键 Hook 在受限环境中运行
+3. **路径检查**: 验证 module:function 格式和白名单
+4. **错误隔离**: 用户 Hook 异常不中断系统
+5. **权限检查**: 不允许访问敏感系统模块
+
+### 与当前设计的兼容性
+
+✅ **完全兼容**！当前设计已支持：
+- [x] 多个 Handler 注册同一事件
+- [x] 优先级控制（系统 Hook 高优先级）
+- [x] 异常隔离（Hook 异常不中断）
+- [x] 异步支持（async/await）
+
+💡 **只需补充**：
+- [ ] 配置文件格式定义
+- [ ] 配置加载器实现
+- [ ] 安全验证机制
+- [ ] 动态模块加载
+
+### 实现建议
+
+**时间规划**:
+- Phase 1: 基础 Hook 系统 ✅
+- Phase 1.5 (可选): 用户 Hook 配置 (1-2 周)
+  - 配置加载器
+  - 安全验证
+  - 集成测试
+- Phase 2: 日志系统 (依赖 Phase 1)
+
+---
+
 ## 🚀 下一步
 
 Phase 1 完成后，将启动 Phase 2（日志系统），其中 `LoggingHook` 将作为系统默认 Hook 通过 `HookManager` 实现。
+
+如果需要用户 Hook 配置支持，建议在 Phase 1 完成后作为 Phase 1.5 单独实现。
 
 ---
 
