@@ -96,11 +96,20 @@ class GoogleClient(BaseClient):
         }
 
         # 发送请求
-        response = await self.model.generate_content_async(
-            gemini_messages,
-            generation_config=genai.types.GenerationConfig(**generation_config),
-            stream=stream
-        )
+        try:
+            response = await self.model.generate_content_async(
+                gemini_messages,
+                generation_config=genai.types.GenerationConfig(**generation_config),
+                stream=stream
+            )
+        except Exception as e:
+            # 处理请求失败的情况
+            return ModelResponse(
+                content=[{"type": "text", "text": f"Error: {str(e)}"}],
+                stop_reason="error",
+                usage={"input_tokens": 0, "output_tokens": 0},
+                model=self.model_name_str
+            )
 
         if stream:
             return self._stream_response(response)
@@ -108,15 +117,41 @@ class GoogleClient(BaseClient):
         # 转换为统一格式
         content = []
 
-        if response.text:
-            content.append({"type": "text", "text": response.text})
+        # 安全地访问响应文本（处理可能没有有效文本的情况）
+        try:
+            if response.text:
+                content.append({"type": "text", "text": response.text})
+            elif response.candidates and len(response.candidates) > 0:
+                # 如果没有 text，尝试从候选项构建内容
+                candidate = response.candidates[0]
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'text') and part.text:
+                            content.append({"type": "text", "text": part.text})
+        except Exception as e:
+            # 如果访问失败，记录错误但继续
+            content.append({"type": "text", "text": f"Warning: Could not extract response text: {str(e)}"})
+
+        # 获取 finish_reason（安全处理）
+        finish_reason = "end_turn"
+        if response.candidates and len(response.candidates) > 0:
+            try:
+                finish_reason_value = response.candidates[0].finish_reason
+                if finish_reason_value:
+                    # 处理整数类型的 finish_reason
+                    if isinstance(finish_reason_value, int):
+                        finish_reason = self._convert_finish_reason(str(finish_reason_value))
+                    else:
+                        finish_reason = self._convert_finish_reason(finish_reason_value.name if hasattr(finish_reason_value, 'name') else str(finish_reason_value))
+            except Exception:
+                finish_reason = "end_turn"
 
         # 注意：Google Gemini 的免费版本不支持工具调用
         # 所以这里我们只返回文本内容
 
         return ModelResponse(
             content=content,
-            stop_reason=self._convert_finish_reason(response.candidates[0].finish_reason.name if response.candidates else "STOP"),
+            stop_reason=finish_reason,
             usage={
                 "input_tokens": response.usage_metadata.prompt_token_count if response.usage_metadata else 0,
                 "output_tokens": response.usage_metadata.candidates_token_count if response.usage_metadata else 0
@@ -130,9 +165,15 @@ class GoogleClient(BaseClient):
             "STOP": "end_turn",
             "MAX_TOKENS": "max_tokens",
             "SAFETY": "stop_sequence",
-            "RECITATION": "stop_sequence"
+            "RECITATION": "stop_sequence",
+            "0": "end_turn",      # FINISH_REASON_UNSPECIFIED
+            "1": "end_turn",      # STOP
+            "2": "max_tokens",    # MAX_TOKENS
+            "3": "stop_sequence", # SAFETY
+            "4": "stop_sequence", # RECITATION
+            "5": "stop_sequence", # OTHER
         }
-        return mapping.get(finish_reason, "end_turn")
+        return mapping.get(str(finish_reason), "end_turn")
 
     async def _stream_response(self, stream) -> AsyncIterator[StreamChunk]:
         """处理流式响应"""
