@@ -9,7 +9,7 @@ from .base import Command, CLIContext
 class InitCommand(Command):
     """初始化工作区，生成 CLAUDE.md"""
 
-    name = "/init"
+    name = "init"
     description = "Initialize workspace with CLAUDE.md context file"
 
     async def execute(self, args: str, context: CLIContext) -> str:
@@ -139,7 +139,7 @@ After generating the content, use the Write tool to save it to: {claude_md_path}
 class ShowContextCommand(Command):
     """显示 CLAUDE.md 内容"""
 
-    name = "/show-context"
+    name = "show-context"
     description = "Show current CLAUDE.md content"
 
     async def execute(self, args: str, context: CLIContext) -> str:
@@ -161,7 +161,7 @@ class ShowContextCommand(Command):
 class LoadContextCommand(Command):
     """加载 CLAUDE.md 到对话上下文"""
 
-    name = "/load-context"
+    name = "load-context"
     description = "Load CLAUDE.md into conversation context"
 
     async def execute(self, args: str, context: CLIContext) -> str:

@@ -7,7 +7,7 @@ from ..utils import OutputFormatter, OutputLevel
 class VerboseCommand(Command):
     """切换详细输出模式"""
 
-    name = "/verbose"
+    name = "verbose"
     description = "Toggle verbose mode: /verbose on|off"
 
     async def execute(self, args: str, context: CLIContext) -> str:
@@ -29,7 +29,7 @@ class VerboseCommand(Command):
 class QuietCommand(Command):
     """切换安静模式"""
 
-    name = "/quiet"
+    name = "quiet"
     description = "Toggle quiet mode: /quiet on|off"
 
     async def execute(self, args: str, context: CLIContext) -> str:

@@ -50,8 +50,8 @@ class ClearCommand(Command):
         return ["reset"]
 
     async def execute(self, args: str, context: CLIContext) -> Optional[str]:
-        context.agent.context.messages.clear()
-        context.agent.context.summary = ""
+        context.agent.context_manager.messages.clear()
+        context.agent.context_manager.summary = ""
         context.agent.todo_manager.clear()
 
         return "✓ Conversation history cleared"
