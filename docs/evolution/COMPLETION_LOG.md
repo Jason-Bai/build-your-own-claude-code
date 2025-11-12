@@ -43,17 +43,20 @@ Phase 6: 多Agent编排 (待开始) ⏳
   - [x] 实现 Hook 管理器核心类 (`src/hooks/manager.py`)
   - [x] 实现 Hook 上下文构建器 (`src/hooks/builder.py`)
 
-- **周二继续 (11-13)** ✅ 完成集成和测试
+- **周二继续 (11-13)** ✅ 完成集成和测试和 main.py 集成
   - [x] 创建 `src/hooks/__init__.py` 模块导出
   - [x] 集成到 EnhancedAgent
   - [x] 编写单元测试 (`tests/test_hooks.py`)
   - [x] 编写集成测试 (`tests/test_hooks_integration.py`)
+  - [x] 在 `main.py` 中初始化 HookManager
+  - [x] 创建 `_setup_hooks()` 应用级配置函数
+  - [x] 添加 ON_THINKING Hook 到 _call_llm()
 
-- **待进行**
-  - [ ] 运行测试验证
-  - [ ] 文档完善
-  - [ ] 代码审查
-  - [ ] 提交合并
+- **周二后续 (11-13)** ✅ 完成文档更新
+  - [x] 更新 phase-1-hooks.md 状态为 ✅ 实现完成
+  - [x] 更新实现清单全部勾选
+  - [x] 添加完成说明和实现细节
+  - [x] 更新 COMPLETION_LOG.md
 
 ---
 
