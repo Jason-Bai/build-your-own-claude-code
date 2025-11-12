@@ -311,8 +311,6 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
         max_tokens=model_config.get("max_tokens")
     )
 
-    OutputFormatter.success(f"Using model: {client.model_name} (provider: {selected_provider})")
-
     # 确定权限模式
     permission_mode = PermissionMode.AUTO_APPROVE_SAFE  # 默认
     if args:
@@ -334,7 +332,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
         mcp_client = MCPClient()
 
         if mcp_client.is_available():
-            print("\n🔌 Loading MCP servers...")
+            # 静默加载 MCP 服务器，避免初始化阶段输出混乱
             for server_config in mcp_configs:
                 try:
                     mcp_config = MCPServerConfig(**server_config)
@@ -343,7 +341,8 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
                 except Exception as e:
                     OutputFormatter.warning(f"Failed to load MCP server: {e}")
         else:
-            OutputFormatter.info("MCP not installed. Install with: pip install mcp")
+            # MCP 未安装时不输出任何信息
+            pass
             mcp_client = None
 
     # 创建 EnhancedAgent
@@ -445,9 +444,6 @@ async def main():
         else:
             OutputFormatter.info("No CLAUDE.md found. Use /init to create one.")
 
-    print("\n💡 Type /help to see available commands")
-    print("💡 Type /exit to quit\n")
-
     # 主循环
     try:
         while True:
@@ -467,8 +463,7 @@ async def main():
                 if command_registry.is_command(user_input):
                     result = await command_registry.execute(user_input, cli_context)
                     if result:
-                        print(result)
-                    print()
+                        OutputFormatter.print_assistant_response(result)
                     continue
 
                 # 普通对话 - 打印 AI 响应头
@@ -489,23 +484,22 @@ async def main():
                     )
 
             except KeyboardInterrupt:
-                print("\n\n💡 Use /exit to quit properly")
+                OutputFormatter.info("Use /exit to quit properly")
                 continue
             except EOFError:
-                print("\n\n👋 Goodbye!")
+                OutputFormatter.success("Goodbye!")
                 break
             except Exception as e:
-                print(f"\n❌ Error: {str(e)}")
+                OutputFormatter.error(str(e))
                 import traceback
                 traceback.print_exc()
-                print("💡 Type /clear to reset if needed\n")
+                OutputFormatter.info("Type /clear to reset if needed")
 
     finally:
         # 清理 MCP 连接
         if agent.mcp_client:
-            print("\n🔌 Disconnecting MCP servers...")
+            OutputFormatter.info("Disconnecting MCP servers...")
             await agent.mcp_client.disconnect_all()
-        print()
 
 
 def cli():
