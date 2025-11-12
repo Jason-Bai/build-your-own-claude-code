@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "custom_handlers": [
+      {
+        "event": "agent.start",
+        "handler": "example_hooks:on_agent_start",
+        "priority": 50,
+        "enabled": false,
+        "description": "Custom hook for agent startup - modify example_hooks.py to enable"
+      },
+      {
+        "event": "tool.execute",
+        "handler": "example_hooks:on_tool_execute",
+        "priority": 50,
+        "enabled": false,
+        "description": "Custom hook for tool execution - modify example_hooks.py to enable"
+      }
+    ]
+  }
+}
