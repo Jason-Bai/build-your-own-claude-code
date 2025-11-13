@@ -97,16 +97,6 @@ Define in `~/.tiny-claude/settings.json`:
 
 ---
 
-## Project Evolution
-
-- **Phase 1 ✅** - Prompt-Toolkit Input Enhancement
-- **Phase 2 ✅** - Rich Output Enhancement
-- **Phase 3 ✅** - Event-Driven Real-Time Feedback
-
-For detailed features: [docs/features/](./docs/features/)
-
----
-
 ## Documentation and Code Standards
 
 ### Language Requirements
