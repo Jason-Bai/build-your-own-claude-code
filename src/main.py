@@ -30,6 +30,7 @@ from .mcps import MCPClient, MCPServerConfig
 from .persistence import ConversationPersistence
 from .utils import OutputFormatter, OutputLevel
 from .hooks import HookManager, HookEvent, HookContextBuilder, HookConfigLoader
+from .events import EventBus, EventType, Event, get_event_bus
 
 
 def load_config(config_path: str = "config.json") -> dict:
@@ -226,6 +227,65 @@ def parse_args():
     return parser.parse_args()
 
 
+async def _setup_event_listeners(event_bus: EventBus):
+    """设置事件监听器用于实时反馈"""
+
+    async def on_tool_selected(event: Event):
+        """工具选择事件"""
+        tool_name = event.data.get("tool_name", "Unknown")
+        brief_description = event.data.get("brief_description", "")
+        OutputFormatter.info(f"🔧 Using {tool_name}: {brief_description}")
+
+    async def on_tool_executing(event: Event):
+        """工具执行中事件"""
+        tool_name = event.data.get("tool_name", "Unknown")
+        # 这里可以显示"执行中..."的动画效果
+        # 为了保持简洁，我们不在这里输出
+
+    async def on_tool_completed(event: Event):
+        """工具完成事件"""
+        tool_name = event.data.get("tool_name", "Unknown")
+        OutputFormatter.success(f"✓ {tool_name} completed")
+
+    async def on_tool_error(event: Event):
+        """工具错误事件"""
+        tool_name = event.data.get("tool_name", "Unknown")
+        error = event.data.get("error", "Unknown error")
+        error_type = event.data.get("error_type", "")
+        if error_type == "permission_denied":
+            OutputFormatter.warning(f"⛔ Permission denied: {error}")
+        else:
+            OutputFormatter.error(f"❌ {tool_name} failed: {error}")
+
+    async def on_agent_thinking(event: Event):
+        """Agent思考事件"""
+        turn = event.data.get("turn", 1)
+        # 只在第一轮时显示思考中提示
+        if turn == 1:
+            OutputFormatter.info("💭 Thinking...")
+
+    async def on_agent_end(event: Event):
+        """Agent完成事件"""
+        success = event.data.get("success", False)
+        if success:
+            # 所有反馈都已显示，无需额外输出
+            pass
+
+    async def on_agent_error(event: Event):
+        """Agent错误事件"""
+        error = event.data.get("error", "Unknown error")
+        OutputFormatter.error(f"❌ Agent error: {error}")
+
+    # 订阅事件
+    event_bus.subscribe(EventType.TOOL_SELECTED, on_tool_selected)
+    event_bus.subscribe(EventType.TOOL_EXECUTING, on_tool_executing)
+    event_bus.subscribe(EventType.TOOL_COMPLETED, on_tool_completed)
+    event_bus.subscribe(EventType.TOOL_ERROR, on_tool_error)
+    event_bus.subscribe(EventType.AGENT_THINKING, on_agent_thinking)
+    event_bus.subscribe(EventType.AGENT_END, on_agent_end)
+    event_bus.subscribe(EventType.AGENT_ERROR, on_agent_error)
+
+
 async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     """初始化 EnhancedAgent"""
 
@@ -417,6 +477,9 @@ async def main():
 
     # 初始化 Agent
     agent = await initialize_agent(config, args)
+
+    # 设置事件监听器用于实时反馈
+    await _setup_event_listeners(get_event_bus())
 
     # 注册内置命令
     register_builtin_commands()

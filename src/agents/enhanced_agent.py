@@ -11,6 +11,7 @@ from .tool_manager import AgentToolManager
 from .permission_manager import PermissionManager, PermissionMode
 from .feedback import AgentFeedback, FeedbackLevel
 from ..hooks import HookManager, HookContextBuilder, HookEvent
+from ..events import EventBus, EventType, Event, get_event_bus
 
 if TYPE_CHECKING:
     from ..mcps import MCPClient
@@ -33,6 +34,7 @@ class EnhancedAgent:
         # 核心组件
         self.client = client
         self.mcp_client = mcp_client
+        self.event_bus = get_event_bus()
 
         # 管理器
         self.state_manager = AgentStateManager(max_turns=max_turns)
@@ -87,12 +89,24 @@ class EnhancedAgent:
             )
         )
 
+        # Emit: AGENT_START
+        await self.event_bus.emit(Event(
+            EventType.AGENT_START,
+            user_input=user_input
+        ))
+
         # 1. 添加用户消息
         self.context_manager.add_user_message(user_input)
 
         # 2. 状态：开始思考
         self._transition_state(AgentState.THINKING)
         feedback.add_thinking()
+
+        # Emit: AGENT_THINKING
+        await self.event_bus.emit(Event(
+            EventType.AGENT_THINKING,
+            turn=self.state_manager.current_turn
+        ))
 
         # Trigger: on_agent_start
         await self.hook_manager.trigger(
@@ -135,6 +149,14 @@ class EnhancedAgent:
                     self.context_manager.add_assistant_message(response.content)
                     self._transition_state(AgentState.COMPLETED)
 
+                    # Emit: AGENT_END (success)
+                    await self.event_bus.emit(Event(
+                        EventType.AGENT_END,
+                        success=True,
+                        final_response=final_response,
+                        turn=self.state_manager.current_turn
+                    ))
+
                     # Trigger: on_agent_end
                     await self.hook_manager.trigger(
                         HookEvent.ON_AGENT_END,
@@ -163,10 +185,23 @@ class EnhancedAgent:
                 # 12. 继续下一轮
                 self._transition_state(AgentState.THINKING)
 
+                # Emit: AGENT_THINKING (for next turn)
+                await self.event_bus.emit(Event(
+                    EventType.AGENT_THINKING,
+                    turn=self.state_manager.current_turn + 1
+                ))
+
             except Exception as e:
                 if verbose:
                     print(f"\n❌ Error: {str(e)}")
                 self._transition_state(AgentState.ERROR)
+
+                # Emit: AGENT_ERROR
+                await self.event_bus.emit(Event(
+                    EventType.AGENT_ERROR,
+                    error=str(e),
+                    error_type=type(e).__name__
+                ))
 
                 # Trigger: on_error
                 await self.hook_manager.trigger(
@@ -285,6 +320,14 @@ class EnhancedAgent:
             if feedback:
                 feedback.add_tool_call(tool_name, brief_description)
 
+            # Emit: TOOL_SELECTED
+            await self.event_bus.emit(Event(
+                EventType.TOOL_SELECTED,
+                tool_name=tool_name,
+                tool_id=tool_id,
+                brief_description=brief_description
+            ))
+
             # Trigger: on_tool_select
             await self.hook_manager.trigger(
                 HookEvent.ON_TOOL_SELECT,
@@ -322,6 +365,16 @@ class EnhancedAgent:
                     # 添加权限拒绝反馈
                     if feedback:
                         feedback.add_error(f"Permission denied: {deny_message}")
+
+                    # Emit: TOOL_ERROR (permission denied)
+                    await self.event_bus.emit(Event(
+                        EventType.TOOL_ERROR,
+                        tool_name=tool_name,
+                        tool_id=tool_id,
+                        error=deny_message,
+                        error_type="permission_denied"
+                    ))
+
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_id,
@@ -332,6 +385,13 @@ class EnhancedAgent:
 
             if verbose:
                 print(f"\n[Using tool: {tool_name}]", flush=True)
+
+            # Emit: TOOL_EXECUTING
+            await self.event_bus.emit(Event(
+                EventType.TOOL_EXECUTING,
+                tool_name=tool_name,
+                tool_id=tool_id
+            ))
 
             # Trigger: on_tool_execute
             await self.hook_manager.trigger(
@@ -356,6 +416,14 @@ class EnhancedAgent:
 
             # Trigger: on_tool_result or on_tool_error
             if result.success:
+                # Emit: TOOL_COMPLETED
+                await self.event_bus.emit(Event(
+                    EventType.TOOL_COMPLETED,
+                    tool_name=tool_name,
+                    tool_id=tool_id,
+                    output=result.output
+                ))
+
                 await self.hook_manager.trigger(
                     HookEvent.ON_TOOL_RESULT,
                     self._hook_context_builder.build(
@@ -369,6 +437,14 @@ class EnhancedAgent:
                 if feedback:
                     feedback.add_tool_completed(tool_name)
             else:
+                # Emit: TOOL_ERROR
+                await self.event_bus.emit(Event(
+                    EventType.TOOL_ERROR,
+                    tool_name=tool_name,
+                    tool_id=tool_id,
+                    error=result.error
+                ))
+
                 await self.hook_manager.trigger(
                     HookEvent.ON_TOOL_ERROR,
                     self._hook_context_builder.build(

@@ -541,25 +541,53 @@ async def main():
 
 ### 第三阶段 (P3)
 
-- [ ] P3.1: 创建事件系统
-  - 状态: ⏳ 待开始
-  - 完成时间:
-  - 提交:
+- [x] P3.1: 创建事件系统
+  - 状态: ✅ 已完成
+  - 完成时间: 2025-11-13
+  - 文件: src/events/event_bus.py, src/events/__init__.py
+  - 改动: 创建EventBus类，实现pub/sub事件系统，支持同步和异步事件发送
+  - 验证: EventBus正常工作，支持subscribe/emit操作，事件正确分发
 
-- [ ] P3.2: 修改Agent发出事件
-  - 状态: ⏳ 待开始
-  - 完成时间:
-  - 提交:
+- [x] P3.2: 修改Agent发出事件
+  - 状态: ✅ 已完成
+  - 完成时间: 2025-11-13
+  - 改动: src/agents/enhanced_agent.py
+    - 添加event_bus引用
+    - 在run()中emit AGENT_START, AGENT_THINKING, AGENT_END, AGENT_ERROR事件
+    - 在_execute_tools()中emit TOOL_SELECTED, TOOL_EXECUTING, TOOL_COMPLETED, TOOL_ERROR事件
+  - 验证: Agent在各关键节点发出事件，事件数据正确
 
-- [ ] P3.3: 修改main.py监听事件
-  - 状态: ⏳ 待开始
-  - 完成时间:
-  - 提交:
+- [x] P3.3: 修改main.py监听事件
+  - 状态: ✅ 已完成
+  - 完成时间: 2025-11-13
+  - 改动: src/main.py
+    - 添加_setup_event_listeners()函数
+    - 为TOOL_SELECTED, TOOL_EXECUTING, TOOL_COMPLETED, TOOL_ERROR, AGENT_THINKING等事件注册监听器
+    - 在初始化后调用_setup_event_listeners()注册所有监听器
+  - 验证: 事件监听器正常工作，实时输出事件反馈
 
-- [ ] P3.4: 测试验收
-  - 状态: ⏳ 待开始
-  - 完成时间:
-  - 提交:
+- [x] P3.4: 测试验收
+  - 状态: ✅ 已完成
+  - 完成时间: 2025-11-13
+  - 测试场景:
+    1. ✅ 简单对话
+       - 输入: "tell me what 2+2 is"
+       - 验证: ✓ 💭 Thinking... 反馈显示，最终响应正确
+    2. ✅ 单工具调用
+       - 输入: "create a test file and read it back"
+       - 验证:
+         - ✓ [Using tool: Write] 显示
+         - ✓ [Using tool: Read] 显示
+         - ✓ 最终响应完整
+    3. ✅ 多轮工具调用
+       - 输入: "list all markdown files and read one"
+       - 验证:
+         - ✓ 🔧 Using Glob: search: **/*.md
+         - ✓ ✓ Glob completed
+         - ✓ 🔧 Using Read: read: README.md
+         - ✓ ✓ Read completed
+         - ✓ 最终响应显示所有文件列表和内容
+  - 结论: 实时反馈流畅，用户不感觉卡顿，多轮交互清晰可见
 
 ---
 
