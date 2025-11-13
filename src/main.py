@@ -28,7 +28,7 @@ from .commands import CLIContext, command_registry, register_builtin_commands
 from .prompts import get_system_prompt
 from .mcps import MCPClient, MCPServerConfig
 from .persistence import ConversationPersistence
-from .utils import OutputFormatter, OutputLevel
+from .utils import OutputFormatter, OutputLevel, get_input_manager
 from .hooks import HookManager, HookEvent, HookContextBuilder, HookConfigLoader
 from .events import EventBus, EventType, Event, get_event_bus
 
@@ -533,6 +533,10 @@ async def main():
     # 主循环
     try:
         is_first_iteration = True
+
+        # 获取输入管理器（Prompt-Toolkit 增强的输入）
+        input_manager = get_input_manager()
+
         while True:
             try:
                 # 第一次迭代时不打印分隔线，后续迭代打印
@@ -540,14 +544,16 @@ async def main():
                     OutputFormatter.print_separator()
                 is_first_iteration = False
 
-                OutputFormatter.print_user_prompt()
-                user_input = input().strip()
+                # 使用 Prompt-Toolkit 的增强输入，支持：
+                # - Tab: 自动补全命令
+                # - Up/Down: 浏览历史
+                # - Ctrl+R: 搜索历史
+                # - 快捷键: Ctrl+A/E/K/U/W
+                # - 鼠标: 选择、复制、粘贴
+                user_input = input_manager.get_input()
 
                 if not user_input:
                     continue
-
-                # 显示用户输入
-                # OutputFormatter.print_user_input(user_input)
 
                 # 检查是否是命令
                 if command_registry.is_command(user_input):
