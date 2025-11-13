@@ -1,38 +1,38 @@
-# 架构设计文档
+# Architecture Design Document
 
-本文档详细描述了 Build Your Own Claude Code 项目的完整架构设计。
+This document describes the complete architecture design of the Build Your Own Claude Code project in detail.
 
-## 目录
+## Table of Contents
 
-- [整体架构分层](#整体架构分层)
-- [核心组件关系](#核心组件关系)
-- [数据流向图](#数据流向图)
-- [Agent 状态机](#agent-状态机)
-- [工具系统架构](#工具系统架构)
-- [上下文管理策略](#上下文管理策略)
-- [目录结构层级](#目录结构层级)
-- [扩展点设计](#扩展点设计)
+- [Overall Layered Architecture](#overall-layered-architecture)
+- [Core Component Relationships](#core-component-relationships)
+- [Data Flow Diagram](#data-flow-diagram)
+- [Agent State Machine](#agent-state-machine)
+- [Tool System Architecture](#tool-system-architecture)
+- [Context Management Strategy](#context-management-strategy)
+- [Directory Structure Hierarchy](#directory-structure-hierarchy)
+- [Extension Points Design](#extension-points-design)
 
 ---
 
-## 整体架构分层
+## Overall Layered Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                      CLI Interface                          │
-│                  (用户输入/输出, 命令处理)                    │
+│                  (User input/output, command processing)    │
 └──────────────────────┬──────────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────────┐
 │                  Enhanced Agent                             │
 │  ┌────────────────────────────────────────────────────────┐ │
 │  │  State Manager      Context Manager    Tool Manager    │ │
-│  │  (状态追踪)         (上下文管理)        (工具编排)      │ │
+│  │  (State tracking)   (Context mgmt)     (Tool orchestration)│
 │  └────────────────────────────────────────────────────────┘ │
 │                                                              │
-│  - 对话循环控制                                               │
-│  - 多轮交互编排                                               │
-│  - 统计信息收集                                               │
+│  - Conversation loop control                                │
+│  - Multi-turn interaction orchestration                     │
+│  - Statistics collection                                    │
 └────────┬─────────────────────┬──────────────────────────────┘
          │                     │
     ┌────▼────┐           ┌────▼─────────────────┐
@@ -54,16 +54,16 @@
                      └────────┘ └────────┘ └────────┘
 ```
 
-### 架构说明
+### Architecture Description
 
-- **CLI Interface**: 用户交互层，处理输入输出和命令解析
-- **Enhanced Agent**: 核心控制层，整合三大管理器
-- **Client Layer**: LLM 客户端抽象层，支持多模型
-- **Tool Ecosystem**: 工具生态系统，包含内置工具、MCP 工具和命令系统
+- **CLI Interface**: User interaction layer handling input/output and command parsing
+- **Enhanced Agent**: Core control layer integrating three major managers
+- **Client Layer**: LLM client abstraction layer supporting multiple models
+- **Tool Ecosystem**: Tool ecosystem system including built-in tools, MCP tools, and command system
 
 ---
 
-## 核心组件关系
+## Core Component Relationships
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -87,7 +87,7 @@
 │  │  └────────────┘         └────────────┘      │          │
 │  │                                              │          │
 │  │  • register_tool()                           │          │
-│  │  • execute_tool() - 智能重试                  │          │
+│  │  • execute_tool() - intelligent retry        │          │
 │  │  • get_tool_definitions()                    │          │
 │  │  • usage_statistics                          │          │
 │  └──────────────────────────────────────────────┘          │
@@ -101,37 +101,37 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 组件职责
+### Component Responsibilities
 
 #### StateManager
-- 管理 Agent 运行状态（IDLE, THINKING, USING_TOOL, COMPLETED, ERROR）
-- 记录工具调用历史
-- 收集和统计性能指标
-- 控制对话轮数
+- Manages Agent runtime state (IDLE, THINKING, USING_TOOL, COMPLETED, ERROR)
+- Records tool call history
+- Collects and aggregates performance metrics
+- Controls conversation turns
 
 #### ContextManager
-- 管理对话消息历史
-- 估算 Token 使用量
-- 自动压缩和摘要化
-- 维护元数据
+- Manages conversation message history
+- Estimates token usage
+- Performs automatic compression and summarization
+- Maintains metadata
 
 #### ToolManager
-- 注册和管理所有工具（内置 + MCP）
-- 执行工具调用（带智能重试）
-- 统计工具使用情况
-- 提供统一的工具接口
+- Registers and manages all tools (built-in + MCP)
+- Executes tool calls (with intelligent retry)
+- Gathers tool usage statistics
+- Provides unified tool interface
 
 ---
 
-## 数据流向图
+## Data Flow Diagram
 
 ```
-用户输入 "Create a hello.py file"
+User input "Create a hello.py file"
     │
     ▼
 ┌─────────────────────────────────────┐
-│  CLI 命令检查                        │
-│  Is command? No → 继续               │
+│  CLI command check                   │
+│  Is command? No → Continue           │
 └───────────┬─────────────────────────┘
             │
             ▼
@@ -143,38 +143,38 @@
             │
             ▼
 ┌─────────────────────────────────────┐
-│  Context 压缩检查                    │
+│  Context compression check           │
 │  • estimate_tokens()                │
 │  • compress_if_needed()             │
 └───────────┬─────────────────────────┘
             │
             ▼
 ┌─────────────────────────────────────┐
-│  调用 LLM                            │
+│  Call LLM                            │
 │  • Client.create_message()          │
 │  • tools = ToolManager.get_defs()   │
 └───────────┬─────────────────────────┘
             │
             ▼
 ┌─────────────────────────────────────┐
-│  解析响应                            │
-│  • text_blocks: 显示给用户           │
-│  • tool_uses: 提取工具调用           │
+│  Parse response                      │
+│  • text_blocks: display to user     │
+│  • tool_uses: extract tool calls    │
 └───────────┬─────────────────────────┘
             │
             ▼
 ┌─────────────────────────────────────┐
-│  执行工具                            │
+│  Execute tools                       │
 │  • StateManager → USING_TOOL        │
 │  • ToolManager.execute_tool()       │
-│    - 内置工具 → ToolExecutor        │
-│    - MCP工具 → MCPClient            │
-│  • 智能重试 (最多2次)                │
+│    - Built-in tools → ToolExecutor  │
+│    - MCP tools → MCPClient          │
+│  • Intelligent retry (max 2 times)  │
 └───────────┬─────────────────────────┘
             │
             ▼
 ┌─────────────────────────────────────┐
-│  更新状态                            │
+│  Update state                        │
 │  • StateManager.record_tool_call()  │
 │  • StateManager.add_tokens()        │
 │  • ContextManager.add_results()     │
@@ -182,19 +182,19 @@
             │
             ▼
 ┌─────────────────────────────────────┐
-│  继续循环 or 完成                    │
-│  • 有更多工具调用? → 继续            │
-│  • 无工具调用? → COMPLETED          │
-│  • 超过max_turns? → ERROR           │
+│  Continue loop or complete           │
+│  • More tool calls? → Continue      │
+│  • No tool calls? → COMPLETED       │
+│  • Exceeded max_turns? → ERROR      │
 └─────────────────────────────────────┘
 ```
 
 ---
 
-## Agent 状态机
+## Agent State Machine
 
 ```
-          [启动]
+          [Start]
              │
              ▼
          ┌────────┐
@@ -207,7 +207,7 @@
       └──────┬───────┘          │
              │                  │
    ┌─────────▼─────────┐        │
-   │ 需要调用工具?      │        │
+   │ Need tool call?    │        │
    └─────┬──────┬──────┘        │
          │ Yes  │ No            │
          │      │               │
@@ -226,7 +226,7 @@
          │
          └──────────────┘
 
-  [超过max_turns或异常]
+  [Exceeded max_turns or error]
          │
          ▼
     ┌────────┐
@@ -234,18 +234,18 @@
     └────────┘
 ```
 
-### 状态说明
+### State Description
 
-- **IDLE**: 初始状态，等待用户输入
-- **THINKING**: LLM 思考中，生成响应
-- **USING_TOOL**: 执行工具调用
-- **WAITING_FOR_RESULT**: 等待工具执行结果
-- **COMPLETED**: 任务完成
-- **ERROR**: 发生错误或超过最大轮数
+- **IDLE**: Initial state, waiting for user input
+- **THINKING**: LLM is thinking, generating response
+- **USING_TOOL**: Executing tool call
+- **WAITING_FOR_RESULT**: Waiting for tool execution result
+- **COMPLETED**: Task completed
+- **ERROR**: Error occurred or maximum turns exceeded
 
 ---
 
-## 工具系统架构
+## Tool System Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -253,7 +253,7 @@
 ├──────────────────────────────────────────────────────────┤
 │                                                          │
 │  ┌─────────────────────────────────────────────────┐    │
-│  │           ToolExecutor (智能重试)               │    │
+│  │           ToolExecutor (Intelligent Retry)      │    │
 │  │  ┌──────────────────────────────────────────┐   │    │
 │  │  │  for attempt in range(max_retries=2):    │   │    │
 │  │  │    result = await tool.execute()         │   │    │
@@ -279,16 +279,16 @@
 └──────────────────────────────────────────────────────────┘
 ```
 
-### 智能重试机制
+### Intelligent Retry Mechanism
 
-1. **最多重试 2 次**: 对于可重试的错误自动重试
-2. **指数退避**: 每次重试间隔递增（0.5s, 1s）
-3. **非重试错误**: 识别不应重试的错误（文件不存在、权限错误等）
-4. **失败后决策**: 所有重试失败后，将错误返回给 Claude 让其决策
+1. **Maximum 2 retries**: Automatically retry for retryable errors
+2. **Exponential backoff**: Increasing retry intervals (0.5s, 1s)
+3. **Non-retryable errors**: Identify errors that should not be retried (file not found, permission denied, etc.)
+4. **Post-failure decision**: After all retries fail, return error to Claude for decision-making
 
 ---
 
-## 上下文管理策略
+## Context Management Strategy
 
 ```
 ┌──────────────────────────────────────────────────────────┐
@@ -300,146 +300,146 @@
 │  Max Tokens: 150,000 (80% of 200K)                      │
 │                                                          │
 │  ┌────────────────────────────────────────────────┐     │
-│  │  Token Estimation (每次对话前)                  │     │
+│  │  Token Estimation (before each conversation)   │     │
 │  │  • total = system + summary + messages         │     │
-│  │  • chars ≈ tokens * 3 (保守估计)               │     │
+│  │  • chars ≈ tokens * 3 (conservative estimate)  │     │
 │  └────────────────────────────────────────────────┘     │
 │                                                          │
 │  ┌────────────────────────────────────────────────┐     │
-│  │  Auto Compression (超过阈值时)                  │     │
+│  │  Auto Compression (when threshold exceeded)    │     │
 │  │                                                 │     │
 │  │  [msg1...msg90] + [msg91...msg100]             │     │
 │  │       ↓                    ↓                   │     │
-│  │   生成摘要              保留最近10条             │     │
+│  │   Generate summary     Retain last 10          │     │
 │  │       ↓                    ↓                   │     │
 │  │   Summary         [msg91...msg100]             │     │
 │  └────────────────────────────────────────────────┘     │
 └──────────────────────────────────────────────────────────┘
 ```
 
-### 压缩策略
+### Compression Strategy
 
-1. **Token 估算**: 使用字符数估算（1 token ≈ 3 chars）
-2. **触发条件**: 超过 max_tokens (默认 150K)
-3. **保留策略**: 保留最近 10 条消息
-4. **摘要生成**: 使用 Claude 生成旧消息摘要
-5. **摘要内容**: 关注文件修改、命令执行、关键决策、任务状态
+1. **Token estimation**: Use character count estimation (1 token ≈ 3 chars)
+2. **Trigger condition**: Exceeds max_tokens (default 150K)
+3. **Retention strategy**: Retain last 10 messages
+4. **Summary generation**: Use Claude to generate summary of old messages
+5. **Summary content**: Focus on file modifications, command execution, key decisions, task status
 
 ---
 
-## 目录结构层级
+## Directory Structure Hierarchy
 
 ```
 src/
-├── agents/                 # 🧠 Agent 核心层
-│   ├── enhanced_agent.py   # 主 Agent (整合所有管理器)
-│   ├── state.py            # 状态管理 (FSM + 统计)
-│   ├── context_manager.py  # 上下文管理 (压缩 + 摘要)
-│   └── tool_manager.py     # 工具管理 (注册 + 执行)
+├── agents/                 # 🧠 Agent Core Layer
+│   ├── enhanced_agent.py   # Main Agent (integrating all managers)
+│   ├── state.py            # State Management (FSM + statistics)
+│   ├── context_manager.py  # Context Management (compression + summarization)
+│   └── tool_manager.py     # Tool Management (registration + execution)
 │
-├── clients/                # 🌐 LLM 客户端层
-│   ├── base.py             # 抽象接口
-│   └── anthropic.py        # Anthropic 实现
+├── clients/                # 🌐 LLM Client Layer
+│   ├── base.py             # Abstract Interface
+│   └── anthropic.py        # Anthropic Implementation
 │
-├── tools/                  # 🛠️ 工具层
-│   ├── base.py             # 工具基类
-│   ├── file_ops.py         # 文件操作工具
-│   ├── bash.py             # 命令执行工具
-│   ├── search.py           # 搜索工具
-│   └── todo.py             # Todo 管理工具
+├── tools/                  # 🛠️ Tool Layer
+│   ├── base.py             # Tool Base Class
+│   ├── file_ops.py         # File Operation Tools
+│   ├── bash.py             # Command Execution Tool
+│   ├── search.py           # Search Tools
+│   └── todo.py             # Todo Management Tool
 │
-├── commands/               # ⌨️ 命令层
-│   ├── base.py             # 命令基类 + 注册表
-│   ├── builtin.py          # 内置命令
-│   └── persistence_commands.py  # 持久化命令
+├── commands/               # ⌨️ Command Layer
+│   ├── base.py             # Command Base Class + Registry
+│   ├── builtin.py          # Built-in Commands
+│   └── persistence_commands.py  # Persistence Commands
 │
-├── mcp_integration.py      # 🔌 MCP 集成层
-├── persistence.py          # 💾 持久化层
-├── registry.py             # 📋 工具注册层
-├── prompt.py               # 📝 Prompt 层
-└── main.py                 # 🚀 入口层
+├── mcp_integration.py      # 🔌 MCP Integration Layer
+├── persistence.py          # 💾 Persistence Layer
+├── registry.py             # 📋 Tool Registry Layer
+├── prompt.py               # 📝 Prompt Layer
+└── main.py                 # 🚀 Entry Point Layer
 ```
 
-### 层级说明
+### Layer Description
 
-- **Agent 核心层**: 最核心的 Agent 实现和管理器
-- **LLM 客户端层**: 与 LLM 服务商的交互抽象
-- **工具层**: 实际执行任务的工具集合
-- **命令层**: CLI 命令系统
-- **集成层**: MCP、持久化等外部集成
-- **入口层**: 应用启动和初始化
+- **Agent Core Layer**: Core Agent implementation and managers
+- **LLM Client Layer**: Abstraction for interaction with LLM service providers
+- **Tool Layer**: Actual tool collection for executing tasks
+- **Command Layer**: CLI command system
+- **Integration Layer**: MCP, persistence, and other external integrations
+- **Entry Point Layer**: Application startup and initialization
 
 ---
 
-## 扩展点设计
+## Extension Points Design
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              扩展接口                                    │
+│              Extension Interface                        │
 ├─────────────────────────────────────────────────────────┤
 │                                                         │
-│  1. 新增 LLM Provider                                   │
-│     └─ 实现 BaseClient 接口                             │
+│  1. Add New LLM Provider                               │
+│     └─ Implement BaseClient interface                  │
 │        • create_message()                               │
 │        • generate_summary()                             │
 │        • model_name, context_window                     │
 │                                                         │
-│  2. 新增工具                                            │
-│     └─ 继承 BaseTool                                    │
+│  2. Add New Tool                                        │
+│     └─ Inherit from BaseTool                            │
 │        • name, description, input_schema                │
 │        • execute()                                      │
-│        • register 到 ToolManager                        │
+│        • register with ToolManager                      │
 │                                                         │
-│  3. 新增命令                                            │
-│     └─ 继承 Command                                     │
+│  3. Add New Command                                     │
+│     └─ Inherit from Command                             │
 │        • name, description, aliases                     │
 │        • execute()                                      │
-│        • register 到 CommandRegistry                    │
+│        • register with CommandRegistry                  │
 │                                                         │
-│  4. 新增 MCP 服务器                                     │
-│     └─ 在 config.json 配置                             │
+│  4. Add New MCP Server                                  │
+│     └─ Configure in config.json                         │
 │        • name, command, args, env                       │
 │        • enabled: true/false                            │
 │                                                         │
-│  5. LangGraph 集成                                      │
-│     └─ 利用 StateManager 接口                          │
-│        • 监听状态变化: on_state_change                  │
-│        • 访问状态: get_current_state()                  │
-│        • 获取统计: get_statistics()                     │
+│  5. LangGraph Integration                               │
+│     └─ Leverage StateManager interface                  │
+│        • Listen to state changes: on_state_change       │
+│        • Access state: get_current_state()              │
+│        • Retrieve statistics: get_statistics()          │
 │                                                         │
-│  6. 流式输出                                            │
-│     └─ 使用 BaseClient.create_message(stream=True)     │
+│  6. Streaming Output                                    │
+│     └─ Use BaseClient.create_message(stream=True)       │
 │        • async for chunk in stream                      │
-│        • 实时显示给用户                                  │
+│        • Display in real-time to user                   │
 │                                                         │
-│  7. 自定义状态钩子                                      │
-│     └─ EnhancedAgent(on_state_change=callback)         │
+│  7. Custom State Hooks                                  │
+│     └─ EnhancedAgent(on_state_change=callback)          │
 │        • def callback(old_state, new_state)             │
-│        • 可用于日志、监控、UI 更新                       │
+│        • Can be used for logging, monitoring, UI update  │
 │                                                         │
-│  8. 自定义压缩策略                                      │
-│     └─ 扩展 ContextManager                             │
-│        • 自定义 compress_if_needed()                    │
-│        • 自定义摘要 prompt                              │
+│  8. Custom Compression Strategy                         │
+│     └─ Extend ContextManager                            │
+│        • Customize compress_if_needed()                 │
+│        • Customize summary prompt                       │
 │                                                         │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 扩展示例
+### Extension Examples
 
-#### 添加新的 LLM Provider
+#### Adding a New LLM Provider
 
 ```python
 from src.clients.base import BaseClient, ModelResponse
 
 class OpenAIClient(BaseClient):
     async def create_message(self, system, messages, tools, **kwargs):
-        # 实现 OpenAI API 调用
+        # Implement OpenAI API call
         response = await openai.chat.completions.create(...)
         return ModelResponse(...)
 
     async def generate_summary(self, prompt):
-        # 实现摘要生成
+        # Implement summary generation
         pass
 
     @property
@@ -451,7 +451,7 @@ class OpenAIClient(BaseClient):
         return 128000
 ```
 
-#### 添加新工具
+#### Adding a New Tool
 
 ```python
 from src.tools.base import BaseTool, ToolResult
@@ -476,12 +476,12 @@ class WebSearchTool(BaseTool):
         }
 
     async def execute(self, query: str) -> ToolResult:
-        # 实现网页搜索
+        # Implement web search
         results = await search_web(query)
         return ToolResult(success=True, output=results)
 ```
 
-#### 集成 LangGraph
+#### LangGraph Integration
 
 ```python
 from langgraph.graph import StateGraph
@@ -490,11 +490,11 @@ from src.agents import EnhancedAgent, AgentState
 def create_langgraph_agent(agent: EnhancedAgent):
     workflow = StateGraph(AgentState)
 
-    # 定义节点
+    # Define nodes
     workflow.add_node("think", agent.run)
     workflow.add_node("use_tool", lambda x: x)
 
-    # 定义边
+    # Define edges
     workflow.add_edge("think", "use_tool")
     workflow.add_edge("use_tool", "think")
 
@@ -503,108 +503,108 @@ def create_langgraph_agent(agent: EnhancedAgent):
 
 ---
 
-## 设计原则
+## Design Principles
 
-### 1. 关注点分离
-每个组件只负责一个明确的职责：
-- StateManager 只管状态
-- ContextManager 只管上下文
-- ToolManager 只管工具
+### 1. Separation of Concerns
+Each component is responsible for exactly one concern:
+- StateManager only manages state
+- ContextManager only manages context
+- ToolManager only manages tools
 
-### 2. 依赖倒置
-通过抽象接口解耦：
-- BaseClient 抽象 LLM 提供商
-- BaseTool 抽象工具实现
-- Command 抽象命令实现
+### 2. Dependency Inversion
+Decouple through abstract interfaces:
+- BaseClient abstracts LLM providers
+- BaseTool abstracts tool implementations
+- Command abstracts command implementations
 
-### 3. 开放封闭
-对扩展开放，对修改封闭：
-- 新增工具不需要修改核心代码
-- 新增 LLM 提供商不影响 Agent 逻辑
-- 新增命令不影响现有命令
+### 3. Open/Closed Principle
+Open for extension, closed for modification:
+- Adding new tools requires no core code changes
+- Adding new LLM providers does not affect Agent logic
+- Adding new commands does not affect existing commands
 
-### 4. 单一职责
-每个类只有一个变化原因：
-- Agent 只因对话流程变化而变化
-- ToolManager 只因工具管理策略变化而变化
-- ContextManager 只因上下文策略变化而变化
-
----
-
-## 性能考虑
-
-### Token 使用优化
-1. **估算而非精确计算**: 避免调用 tokenizer API
-2. **保守估计**: 宁可多估不少估
-3. **按需压缩**: 只在接近限制时才压缩
-4. **批量操作**: 一次性处理多条消息
-
-### 工具执行优化
-1. **智能重试**: 只重试可能成功的错误
-2. **并行执行**: 未来可支持并行工具调用
-3. **结果缓存**: 可选的工具结果缓存
-4. **超时控制**: 防止工具执行时间过长
-
-### 内存管理
-1. **消息压缩**: 自动清理旧消息
-2. **摘要替代**: 用摘要替代详细历史
-3. **流式处理**: 大文件使用流式读取
-4. **及时清理**: 会话结束后清理资源
+### 4. Single Responsibility
+Each class has only one reason to change:
+- Agent changes only due to conversation flow changes
+- ToolManager changes only due to tool management strategy changes
+- ContextManager changes only due to context strategy changes
 
 ---
 
-## 安全考虑
+## Performance Considerations
 
-### 1. 输入验证
-- 文件路径验证（防止路径遍历）
-- 命令注入防护
-- JSON Schema 验证工具参数
+### Token Usage Optimization
+1. **Estimation rather than exact calculation**: Avoid calling tokenizer API
+2. **Conservative estimation**: Better to overestimate than underestimate
+3. **On-demand compression**: Compress only when approaching limits
+4. **Batch operations**: Process multiple messages at once
 
-### 2. 资源限制
-- 最大对话轮数限制
-- 工具执行超时
-- 文件大小限制
-- Token 使用限制
+### Tool Execution Optimization
+1. **Intelligent retry**: Only retry errors that may succeed
+2. **Parallel execution**: Future support for parallel tool calls
+3. **Result caching**: Optional tool result caching
+4. **Timeout control**: Prevent tools from executing too long
 
-### 3. 错误处理
-- 敏感信息不写入日志
-- 错误信息脱敏
-- 异常捕获和恢复
-
-### 4. 权限控制
-- 工具执行权限检查
-- 文件访问权限控制
-- MCP 服务器认证
+### Memory Management
+1. **Message compression**: Automatically clean old messages
+2. **Summary replacement**: Replace detailed history with summary
+3. **Streaming processing**: Use streaming for large files
+4. **Timely cleanup**: Clean resources after session ends
 
 ---
 
-## 可测试性
+## Security Considerations
 
-### 单元测试
-每个组件都可以独立测试：
+### 1. Input Validation
+- File path validation (prevent path traversal)
+- Command injection protection
+- JSON Schema validation for tool parameters
+
+### 2. Resource Limits
+- Maximum conversation turns limit
+- Tool execution timeout
+- File size limits
+- Token usage limits
+
+### 3. Error Handling
+- Sensitive information not written to logs
+- Error message sanitization
+- Exception catching and recovery
+
+### 4. Permission Control
+- Tool execution permission checks
+- File access permission control
+- MCP server authentication
+
+---
+
+## Testability
+
+### Unit Tests
+Each component can be tested independently:
 ```python
-# 测试 StateManager
+# Test StateManager
 def test_state_transition():
     manager = AgentStateManager()
     manager.transition_to(AgentState.THINKING)
     assert manager.current_state == AgentState.THINKING
 
-# 测试 ToolManager
+# Test ToolManager
 async def test_tool_execution():
     manager = AgentToolManager()
     manager.register_tool(MockTool())
     result = await manager.execute_tool("MockTool", {})
     assert result.success
 
-# 测试 ContextManager
+# Test ContextManager
 async def test_context_compression():
     manager = AgentContextManager(max_tokens=100)
-    # 添加大量消息
-    # 验证压缩逻辑
+    # Add large number of messages
+    # Verify compression logic
 ```
 
-### 集成测试
-测试组件间交互：
+### Integration Tests
+Test component interactions:
 ```python
 async def test_agent_flow():
     agent = EnhancedAgent(client, system_prompt)
@@ -615,17 +615,19 @@ async def test_agent_flow():
 
 ---
 
-## 总结
+## Summary
 
-这个架构设计的核心优势：
+Core advantages of this architecture design:
 
-1. **清晰分层**: 职责明确，易于理解
-2. **高度解耦**: 组件间依赖最小化
-3. **易于测试**: 每个组件可独立测试
-4. **扩展性强**: 多个预留扩展点
-5. **生产就绪**: 完整的错误处理、监控、统计
+1. **Clear Layering**: Well-defined responsibilities, easy to understand
+2. **High Decoupling**: Minimal dependencies between components
+3. **Easy to Test**: Each component can be tested independently
+4. **Strong Extensibility**: Multiple reserved extension points
+5. **Production Ready**: Complete error handling, monitoring, statistics
 
-适合作为：
-- **学习项目**: 理解 AI Agent 架构
-- **生产基础**: 构建实际应用
-- **研究平台**: 实验新的 Agent 策略
+Suitable as:
+- **Learning Project**: Understanding AI Agent architecture
+- **Production Foundation**: Building actual applications
+- **Research Platform**: Experimenting with new Agent strategies
+
+---

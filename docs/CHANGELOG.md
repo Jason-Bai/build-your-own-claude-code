@@ -10,10 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Phase 4: 高级代理能力 (规划中)
-- 多模型支持完善
-- 性能优化和 Token 压缩
-- 更多 MCP 服务器集成
+- Phase 4: Advanced Agent Capabilities (In Progress)
+- Enhanced Multi-Model Support
+- Performance Optimization and Token Compression
+- Additional MCP Server Integration
 
 ---
 
@@ -21,32 +21,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Phase 1: Prompt-Toolkit 输入增强 ✅
-详见：[docs/features/v0.0.1-phase-1-input.md](./features/v0.0.1-phase-1-input.md)
+#### Phase 1: Prompt-Toolkit Input Enhancement ✅
+See: [docs/features/v0.0.1/p1-input-enhancement.md](./features/v0.0.1/p1-input-enhancement.md)
 
-- **智能命令自动补全**
-  - CommandCompleter 自定义补全器，支持 "/" 前缀
-  - 大小写不敏感匹配
-  - 多行输入支持
-  - 补全快捷键：Tab 触发补全
+- **Intelligent Command Autocomplete**
+  - CommandCompleter custom completer with "/" prefix support
+  - Case-insensitive matching
+  - Multi-line input support
+  - Completion shortcut: Tab triggers autocomplete
 
-- **历史记录管理**
-  - 持久化历史到 `~/.cache/tiny_claude_code/`
-  - Up/Down 键浏览历史
-  - Ctrl+R 搜索历史
-  - 跨会话历史保留
+- **History Management**
+  - Persistent history to `~/.cache/tiny_claude_code/`
+  - Up/Down keys for history navigation
+  - Ctrl+R for history search
+  - Cross-session history retention
 
-- **键盘快捷键支持**
-  - Ctrl+A/E: 行首/行尾
-  - Ctrl+K/U: 删除到行尾/行首
-  - Ctrl+W: 删除前一个单词
-  - Alt+Enter: 多行编辑
-  - 鼠标支持：选择、复制、粘贴
+- **Keyboard Shortcuts Support**
+  - Ctrl+A/E: Start/End of line
+  - Ctrl+K/U: Delete to end/start of line
+  - Ctrl+W: Delete previous word
+  - Alt+Enter: Multi-line editing
+  - Mouse support: Selection, copy, paste
 
-- **异步兼容性**
-  - async_get_input() 方法支持 asyncio 事件循环
-  - 完美集成主应用事件循环
-  - 无阻塞用户输入
+- **Asynchronous Compatibility**
+  - async_get_input() method supports asyncio event loop
+  - Seamless integration with main application event loop
+  - Non-blocking user input
 
 **Commits:**
 - `1a81d61` - P1: Implement Prompt-Toolkit input enhancement
@@ -54,163 +54,163 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `0370ab7` - Fix: Add async support to PromptInputManager
 - `2c8e340` - Fix: Implement smart command autocomplete
 
-#### Phase 2: Rich 输出增强 ✅
-详见：[docs/features/v0.0.1-phase-2-output.md](./features/v0.0.1-phase-2-output.md)
+#### Phase 2: Rich Output Enhancement ✅
+See: [docs/features/v0.0.1/p2-output-enhancement.md](./features/v0.0.1/p2-output-enhancement.md)
 
-- **彩色样式输出**
-  - 6 种预定义样式：Success (绿), Error (红), Info (青), Warning (黄), Thinking (暗紫), Debug (暗灰)
-  - 一致的样式主题
-  - 易于扩展的样式系统
+- **Colored Styled Output**
+  - 6 predefined styles: Success (green), Error (red), Info (cyan), Warning (yellow), Thinking (dark magenta), Debug (dark gray)
+  - Consistent style theme
+  - Easily extensible style system
 
-- **Markdown 自动渲染**
-  - 自动检测 Markdown 元素
-  - 在 Panel 中智能渲染
-  - 支持标题、列表、引用、代码块
-  - 保留原始格式的备选输出
+- **Markdown Auto-Rendering**
+  - Automatic Markdown element detection
+  - Intelligent rendering in Panels
+  - Support for headings, lists, blockquotes, code blocks
+  - Fallback output preserving original format
 
-- **代码语法高亮**
-  - Monokai 主题
-  - 行号和缩进指南
-  - 多语言支持（Python, JavaScript, SQL, Bash 等）
-  - 自动语言检测
+- **Code Syntax Highlighting**
+  - Monokai theme
+  - Line numbers and indentation guides
+  - Multi-language support (Python, JavaScript, SQL, Bash, etc.)
+  - Automatic language detection
 
-- **表格和 Panel 支持**
-  - 格式化表格显示
-  - 带样式的 Panel 包装
-  - 可扩展的布局
-  - 边框和标题自定义
+- **Table and Panel Support**
+  - Formatted table display
+  - Styled Panel wrapping
+  - Extensible layout
+  - Border and title customization
 
 **Commit:**
 - `e697509` - P2: Enhance output with Rich library
 
-#### Phase 3: 事件驱动实时反馈 ✅
-详见：[docs/features/v0.0.2-phase-3-events.md](./features/v0.0.2-phase-3-events.md)
+#### Phase 3: Event-Driven Real-Time Feedback ✅
+See: [docs/features/v0.0.1/p3-event-driven-feedback.md](./features/v0.0.1/p3-event-driven-feedback.md)
 
-- **事件总线 (EventBus)**
-  - 中央事件分发器
-  - 发布-订阅消息传递
-  - 异步事件处理
-  - 事件优先级管理
-  - 事件去重机制
+- **EventBus (Event Bus)**
+  - Central event dispatcher
+  - Publish-subscribe messaging
+  - Asynchronous event handling
+  - Event priority management
+  - Event deduplication mechanism
 
-- **Hook 系统**
-  - 事件驱动的可扩展性
-  - 工具执行前/后 Hook
-  - Agent 状态变化 Hook
-  - 消息发送/接收 Hook
-  - 安全的 Python 代码加载
-  - AST 验证和执行沙盒
+- **Hook System**
+  - Event-driven extensibility
+  - Pre/Post tool execution hooks
+  - Agent state change hooks
+  - Message send/receive hooks
+  - Secure Python code loading
+  - AST validation and execution sandbox
 
-- **完整的事件流**
-  - 工具调用日志
-  - Token 使用追踪
-  - 状态变化通知
-  - 异步事件处理
+- **Complete Event Flow**
+  - Tool execution logging
+  - Token usage tracking
+  - State change notifications
+  - Asynchronous event processing
 
-- **持久化配置**
-  - 全局配置：`~/.tiny-claude/settings.json`
-  - 项目配置：`.tiny-claude/settings.json`
-  - 本地配置：`.tiny-claude/settings.local.json` (gitignored)
+- **Persistent Configuration**
+  - Global configuration: `~/.tiny-claude/settings.json`
+  - Project configuration: `.tiny-claude/settings.json`
+  - Local configuration: `.tiny-claude/settings.local.json` (gitignored)
 
 **Commit:**
 - `1a17886` - P3: Implement Event-Driven Real-Time Feedback System
 
-#### 项目文档和上下文
-- **CLAUDE.md** - 详细的项目技术背景和结构说明
-- **README.md** - 完整的项目概览和快速开始指南
-- **docs/architecture.md** - 系统架构详细设计
-- **docs/development_guide.md** - 开发工作流和贡献指南
-- **docs/troubleshooting_guide.md** - 故障排除指南
+#### Project Documentation and Context
+- **CLAUDE.md** - Detailed project technical background and structure
+- **README.md** - Comprehensive project overview and quick start guide
+- **docs/architecture_guide.md** - Detailed system architecture design
+- **docs/development_guide.md** - Development workflow and contribution guidelines
+- **docs/troubleshooting_guide.md** - Troubleshooting guide
 
 ### Fixed
 
-#### asyncio 事件循环冲突修复 ✅
-详见：[hotfixes/v2025.01.13.1-fix-asyncio-loop.md](./hotfixes/v2025.01.13.1-fix-asyncio-loop.md)
+#### asyncio Event Loop Conflict Resolution ✅
+See: [hotfixes/v2025.01.13/1-fix-asyncio-loop.md](./hotfixes/v2025.01.13/1-fix-asyncio-loop.md)
 
-- **问题**：`asyncio.run() cannot be called from a running event loop`
-- **原因**：Prompt-Toolkit 同步方法在异步上下文中创建新事件循环导致冲突
-- **解决**：实现 `async_get_input()` 方法使用 `session.prompt_async()`
-- **影响**：Phase 1 输入增强功能现在可以在异步上下文中正常运行
-- **相关 Commit**：`0370ab7`
+- **Issue**: `asyncio.run() cannot be called from a running event loop`
+- **Root Cause**: Prompt-Toolkit synchronous method creates new event loop in async context causing conflict
+- **Resolution**: Implemented `async_get_input()` method using `session.prompt_async()`
+- **Impact**: Phase 1 input enhancement features now function correctly in asynchronous context
+- **Related Commit**: `0370ab7`
 
-#### Tab 自动补全 "/" 前缀问题修复 ✅
-详见：[hotfixes/v2025.01.13.2-fix-tab-autocomplete.md](./hotfixes/v2025.01.13.2-fix-tab-autocomplete.md)
+#### Tab Autocomplete "/" Prefix Issue Resolution ✅
+See: [hotfixes/v2025.01.13/2-fix-tab-autocomplete.md](./hotfixes/v2025.01.13/2-fix-tab-autocomplete.md)
 
-- **问题**：NestedCompleter 删除 "/" 前缀，导致补全失败
-- **症状**：输入 `/h<TAB>` 补全为 `help` 而不是 `/help`
-- **原因**：NestedCompleter 假设补全词汇中不包含前缀字符
-- **解决**：创建自定义 CommandCompleter 类保留 "/" 前缀
-- **影响**：所有命令补全现在正确保留 "/" 前缀
-- **相关 Commit**：`2c8e340`
+- **Issue**: NestedCompleter removes "/" prefix causing autocomplete failure
+- **Symptoms**: Typing `/h<TAB>` completes to `help` instead of `/help`
+- **Root Cause**: NestedCompleter assumes completions vocabulary does not contain prefix characters
+- **Resolution**: Created custom CommandCompleter class that preserves "/" prefix
+- **Impact**: All command autocompletions now correctly preserve "/" prefix
+- **Related Commit**: `2c8e340`
 
 ### Changed
 
-- 优化了输入响应性，减少了延迟
-- 改进了输出格式，增强了可读性
-- 增强了错误消息的清晰度
-- 改进了代码注释和文档字符串
+- Optimized input responsiveness, reduced latency
+- Improved output formatting, enhanced readability
+- Enhanced error message clarity
+- Improved code comments and docstrings
 
 ### Known Issues
 
-- Google Gemini 客户端集成进行中，免费版本不支持工具调用
-- OpenAI 客户端集成进行中
-- 某些终端（如 IDLE）可能不支持完整的颜色和样式
+- Google Gemini client integration in progress, free tier does not support tool calling
+- OpenAI client integration in progress
+- Certain terminals (such as IDLE) may not support full color and style support
 
 ---
 
 ## [0.9.0] - 2024-12-XX
 
 ### Added
-- 初始项目框架
-- 基础 Agent 实现
-- Anthropic Claude 客户端集成
-- 基础工具系统
-- 对话持久化
+- Initial project framework
+- Base Agent implementation
+- Anthropic Claude client integration
+- Base tool system
+- Conversation persistence
 
 ---
 
-## 版本说明
+## Version Notes
 
-### 版本号方案
+### Version Numbering Scheme
 
-- **主版本号 (Major)**: 重大功能或 API 变更
-- **副版本号 (Minor)**: 新增功能，向后兼容
-- **修订版本号 (Patch)**: 缺陷修复
+- **Major Version**: Significant feature or API changes
+- **Minor Version**: New features, backward compatible
+- **Patch Version**: Bug fixes
 
-### 发布周期
+### Release Cycle
 
-- 定期更新新功能
-- 及时发布重要修复
-- 保持文档同步更新
-
----
-
-## 历史版本
-
-查看特定版本的详细信息：
-
-- **Phase 1 文档**: [docs/features/v0.0.1-phase-1-input.md](./features/v0.0.1-phase-1-input.md)
-- **Phase 2 文档**: [docs/features/v0.0.1-phase-2-output.md](./features/v0.0.1-phase-2-output.md)
-- **Phase 3 文档**: [docs/features/v0.0.2-phase-3-events.md](./features/v0.0.2-phase-3-events.md)
+- Regular updates with new features
+- Timely release of critical fixes
+- Maintain synchronized documentation
 
 ---
 
-## 修复和热补丁
+## Version History
+
+For detailed information on specific versions, see:
+
+- **Phase 1 Documentation**: [docs/features/v0.0.1/p1-input-enhancement.md](./features/v0.0.1/p1-input-enhancement.md)
+- **Phase 2 Documentation**: [docs/features/v0.0.1/p2-output-enhancement.md](./features/v0.0.1/p2-output-enhancement.md)
+- **Phase 3 Documentation**: [docs/features/v0.0.1/p3-event-driven-feedback.md](./features/v0.0.1/p3-event-driven-feedback.md)
+
+---
+
+## Fixes and Hotpatches
 
 ### 2025-01-13
-- [v2025.01.13.1](./hotfixes/v2025.01.13.1-fix-asyncio-loop.md) - asyncio 事件循环冲突修复
-- [v2025.01.13.2](./hotfixes/v2025.01.13.2-fix-tab-autocomplete.md) - Tab 自动补全修复
+- [v2025.01.13.1](./hotfixes/v2025.01.13/1-fix-asyncio-loop.md) - asyncio event loop conflict resolution
+- [v2025.01.13.2](./hotfixes/v2025.01.13/2-fix-tab-autocomplete.md) - Tab autocomplete fix
 
-查看更多修复：[docs/hotfixes/README.md](./hotfixes/README.md)
-
----
-
-## 贡献者
-
-感谢所有为此项目做出贡献的人！
+For additional fixes, see: [docs/hotfixes/README.md](./hotfixes/README.md)
 
 ---
 
-**最后更新**: 2025-01-13
+## Contributors
 
-有问题或建议？查看 [README.md](../README.md) 或提交 Issue。
+Thanks to all who have contributed to this project!
+
+---
+
+**Last Updated**: 2025-01-13
+
+Have questions or suggestions? See [README.md](../README.md) or submit an Issue.

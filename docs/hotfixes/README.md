@@ -1,165 +1,165 @@
-# Hotfixes 文档
+# Hotfixes Documentation
 
-本文件夹包含项目线上问题修复历史和说明。
+This folder contains the project's online issue fix history and documentation.
 
-按时间倒序组织，便于查找和追踪最新的修复。
-
----
-
-## 📋 已修复问题总览
-
-### 2025-01-13 (最新)
-
-#### [v2025.01.13.5 - Google Gemini API 响应处理](./v2025.01.13/5-fix-gemini-response.md)
-
-- **问题**：Google API 返回无效 finish_reason 导致应用崩溃
-- **症状**：API 边缘情况下 response.text 不可访问或 finish_reason 值无效
-- **影响范围**：Google Gemini 客户端
-- **严重程度**：中（API 边缘情况）
-- **状态**：✅ 已修复
-- **相关 Commit**：4fecdea
-
-#### [v2025.01.13.4 - 可选客户端导入错误](./v2025.01.13/4-fix-optional-imports.md)
-
-- **问题**：缺少 openai 或 google-generativeai 包时无法启动
-- **症状**：ImportError - 即使不使用可选客户端也会出错
-- **影响范围**：应用初始化、客户端加载
-- **严重程度**：中（启动失败）
-- **状态**：✅ 已修复
-- **相关 Commit**：bbf4956
-
-#### [v2025.01.13.3 - 应用启动错误和 asyncio 兼容性](./v2025.01.13/3-fix-application-startup.md)
-
-- **问题**：三个关键启动时错误
-  - load_dotenv() API 变更
-  - asyncio.run() 冲突
-  - StatusCommand 属性引用错误
-- **影响范围**：应用启动、Hook 系统、状态命令
-- **严重程度**：高（应用无法启动）
-- **状态**：✅ 已修复
-- **相关 Commit**：0d3476f
-
-#### [v2025.01.13.2 - Tab 自动补全 "/" 前缀问题](./v2025.01.13/2-fix-tab-autocomplete.md)
-
-- **问题**：NestedCompleter 删除 "/" 前缀，导致命令补全失败
-- **症状**：输入 `/h<TAB>` 补全为 `help` 而不是 `/help`
-- **影响范围**：Phase 1 命令补全功能
-- **严重程度**：中（功能故障）
-- **状态**：✅ 已修复
-- **相关 Commit**：2c8e340
-
-#### [v2025.01.13.1 - asyncio 事件循环冲突](./v2025.01.13/1-fix-asyncio-loop.md)
-
-- **问题**：`asyncio.run() cannot be called from a running event loop`
-- **影响范围**：Phase 1 输入增强功能
-- **严重程度**：高（致命错误）
-- **状态**：✅ 已修复
-- **相关 Commit**：0370ab7
+Organized chronologically in reverse order for easy lookup and tracking of the latest fixes.
 
 ---
 
-## 🔍 按类型查找修复
+## 📋 Fixed Issues Overview
 
-### 输入相关
+### 2025-01-13 (Latest)
 
-- [v2025.01.13/2-fix-tab-autocomplete.md](./v2025.01.13/2-fix-tab-autocomplete.md) - Tab 自动补全修复
+#### [v2025.01.13.5 - Google Gemini API Response Handling](./v2025.01.13/5-fix-gemini-response.md)
 
-### 异步相关
+- **Issue**: Google API returns invalid finish_reason causing application crash
+- **Symptoms**: API edge case where response.text is inaccessible or finish_reason value is invalid
+- **Impact Range**: Google Gemini client
+- **Severity**: Medium (API edge case)
+- **Status**: ✅ Fixed
+- **Related Commit**: 4fecdea
 
-- [v2025.01.13/1-fix-asyncio-loop.md](./v2025.01.13/1-fix-asyncio-loop.md) - asyncio 事件循环修复
-- [v2025.01.13/3-fix-application-startup.md](./v2025.01.13/3-fix-application-startup.md) - 启动时 asyncio 冲突修复
+#### [v2025.01.13.4 - Optional Client Import Error](./v2025.01.13/4-fix-optional-imports.md)
 
-### 启动相关
+- **Issue**: Application fails to start when openai or google-generativeai package is missing
+- **Symptoms**: ImportError - error occurs even when optional clients are not used
+- **Impact Range**: Application initialization, client loading
+- **Severity**: Medium (startup failure)
+- **Status**: ✅ Fixed
+- **Related Commit**: bbf4956
 
-- [v2025.01.13/3-fix-application-startup.md](./v2025.01.13/3-fix-application-startup.md) - 应用启动错误修复
-- [v2025.01.13/4-fix-optional-imports.md](./v2025.01.13/4-fix-optional-imports.md) - 导入错误修复
+#### [v2025.01.13.3 - Application Startup Errors and asyncio Compatibility](./v2025.01.13/3-fix-application-startup.md)
 
-### 客户端相关
+- **Issue**: Three critical startup-time errors
+  - load_dotenv() API changes
+  - asyncio.run() conflicts
+  - StatusCommand attribute reference error
+- **Impact Range**: Application startup, Hook system, Status command
+- **Severity**: High (application cannot start)
+- **Status**: ✅ Fixed
+- **Related Commit**: 0d3476f
 
-- [v2025.01.13/4-fix-optional-imports.md](./v2025.01.13/4-fix-optional-imports.md) - 可选客户端导入
-- [v2025.01.13/5-fix-gemini-response.md](./v2025.01.13/5-fix-gemini-response.md) - Google Gemini API 处理
+#### [v2025.01.13.2 - Tab Autocomplete "/" Prefix Issue](./v2025.01.13/2-fix-tab-autocomplete.md)
+
+- **Issue**: NestedCompleter removes "/" prefix, causing command autocomplete failure
+- **Symptoms**: Typing `/h<TAB>` completes to `help` instead of `/help`
+- **Impact Range**: Phase 1 command autocomplete feature
+- **Severity**: Medium (feature malfunction)
+- **Status**: ✅ Fixed
+- **Related Commit**: 2c8e340
+
+#### [v2025.01.13.1 - asyncio Event Loop Conflict](./v2025.01.13/1-fix-asyncio-loop.md)
+
+- **Issue**: `asyncio.run() cannot be called from a running event loop`
+- **Impact Range**: Phase 1 input enhancement feature
+- **Severity**: High (fatal error)
+- **Status**: ✅ Fixed
+- **Related Commit**: 0370ab7
 
 ---
 
-## 🎯 修复文件命名规约
+## 🔍 Find Fixes by Type
 
-格式：`v{年}.{月}.{日}.{序号}-{问题名}.md`
+### Input-Related
 
-**示例**：
+- [v2025.01.13/2-fix-tab-autocomplete.md](./v2025.01.13/2-fix-tab-autocomplete.md) - Tab autocomplete fix
 
-- `v2025.01.13/1-fix-asyncio-loop.md` - 2025 年 1 月 13 日第 1 个修复
-- `v2025.01.13/2-fix-tab-autocomplete.md` - 2025 年 1 月 13 日第 2 个修复
-- `v2025.01.15/1-fix-something.md` - 2025 年 1 月 15 日的修复
+### Asyncio-Related
+
+- [v2025.01.13/1-fix-asyncio-loop.md](./v2025.01.13/1-fix-asyncio-loop.md) - asyncio event loop fix
+- [v2025.01.13/3-fix-application-startup.md](./v2025.01.13/3-fix-application-startup.md) - Startup asyncio conflict fix
+
+### Startup-Related
+
+- [v2025.01.13/3-fix-application-startup.md](./v2025.01.13/3-fix-application-startup.md) - Application startup error fix
+- [v2025.01.13/4-fix-optional-imports.md](./v2025.01.13/4-fix-optional-imports.md) - Import error fix
+
+### Client-Related
+
+- [v2025.01.13/4-fix-optional-imports.md](./v2025.01.13/4-fix-optional-imports.md) - Optional client imports
+- [v2025.01.13/5-fix-gemini-response.md](./v2025.01.13/5-fix-gemini-response.md) - Google Gemini API handling
 
 ---
 
-## 📝 修复记录模板
+## 🎯 Hotfix File Naming Convention
 
-新的修复文档应包含以下内容：
+Format: `v{year}.{month}.{day}/{sequence}-fix-{issue-name}.md`
+
+**Examples**:
+
+- `v2025.01.13/1-fix-asyncio-loop.md` - 1st fix on January 13, 2025
+- `v2025.01.13/2-fix-tab-autocomplete.md` - 2nd fix on January 13, 2025
+- `v2025.01.15/1-fix-something.md` - Fix on January 15, 2025
+
+---
+
+## 📝 Hotfix Documentation Template
+
+New hotfix documents should include the following content:
 
 ```markdown
-# 修复：[问题标题]
+# Fix: [Issue Title]
 
-**日期**: YYYY-MM-DD
-**相关 Commit**: [commit hash]
-**影响范围**: [哪些功能或组件受影响]
-**严重程度**: [低/中/高]
+**Date**: YYYY-MM-DD
+**Related Commit**: [commit hash]
+**Impact Range**: [which features or components are affected]
+**Severity**: [Low/Medium/High]
 
-## 问题描述
+## Issue Description
 
-### 症状
+### Symptoms
 
-[用户观察到的现象]
+[what users observe]
 
-### 原因分析
+### Root Cause Analysis
 
-[根本原因是什么]
+[what is the root cause]
 
-## 解决方案
+## Solution
 
-### 实现细节
+### Implementation Details
 
-[如何解决，包括代码示例]
+[how to fix it, including code examples]
 
-### 文件修改
+### File Modifications
 
-- **文件**: [路径]
-- **类**: [类名]
-- **新增方法**: [方法名]
+- **File**: [path]
+- **Class**: [class name]
+- **New Methods**: [method name]
 
-## 测试验证
+## Testing Verification
 
-[如何验证修复有效]
+[how to verify the fix works]
 
-## 影响范围
+## Impact Range
 
-[修复带来的其他影响]
+[other impacts of this fix]
 
-## 相关链接
+## Related Links
 
-- 源代码: [文件路径]
+- Source Code: [file path]
 - Commit: [commit hash]
-- 相关文档: [链接]
+- Related Documentation: [link]
 ```
 
 ---
 
-## 📊 统计数据
+## 📊 Statistics
 
-| 年月    | 修复数 | 最严重 | 状态      |
-| ------- | ------ | ------ | --------- |
-| 2025-01 | 2      | 高     | ✅ 已修复 |
-| 2025-02 | 0      | -      | 待添加    |
-
----
-
-## 🔗 相关文档
-
-- **版本日志** → [../CHANGELOG.md](../CHANGELOG.md)
-- **故障排除** → [../troubleshooting_guide.md](../troubleshooting_guide.md)
-- **功能文档** → [../features/](../features/)
-- **开发指南** → [../development_guide.md](../development_guide.md)
+| Month   | Fixes | Most Severe | Status      |
+| ------- | ----- | ----------- | ----------- |
+| 2025-01 | 5     | High        | ✅ Fixed    |
+| 2025-02 | 0     | -           | To Add      |
 
 ---
 
-**最后更新**: 2025-01-13
+## 🔗 Related Documentation
+
+- **Changelog** → [../CHANGELOG.md](../CHANGELOG.md)
+- **Troubleshooting** → [../troubleshooting_guide.md](../troubleshooting_guide.md)
+- **Feature Documentation** → [../features/](../features/)
+- **Development Guide** → [../development_guide.md](../development_guide.md)
+
+---
+
+**Last Updated**: 2025-01-13

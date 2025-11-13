@@ -1,68 +1,68 @@
-# 故障排除指南
+# Troubleshooting Guide
 
-本文档包含常见问题的诊断和解决方案。
+This document contains diagnostics and solutions for common issues.
 
-## 目录
+## Table of Contents
 
-- [安装和配置](#安装和配置)
-- [API 和网络](#api-和网络)
-- [输入和输出](#输入和输出)
-- [工具执行](#工具执行)
-- [MCP 和 Hook](#mcp-和-hook)
-- [异步和并发](#异步和并发)
-- [文件和权限](#文件和权限)
-- [性能问题](#性能问题)
+- [Installation and Configuration](#installation-and-configuration)
+- [API and Network](#api-and-network)
+- [Input and Output](#input-and-output)
+- [Tool Execution](#tool-execution)
+- [MCP and Hooks](#mcp-and-hooks)
+- [Asynchronous and Concurrency](#asynchronous-and-concurrency)
+- [Files and Permissions](#files-and-permissions)
+- [Performance Issues](#performance-issues)
 
 ---
 
-## 安装和配置
+## Installation and Configuration
 
-### 问题：ImportError 模块未找到
+### Issue: ImportError - Module Not Found
 
-**症状**:
+**Symptoms**:
 ```
 ModuleNotFoundError: No module named 'anthropic'
 ```
 
-**原因**: 依赖未安装或 Python 路径配置不正确
+**Cause**: Dependencies are not installed or Python path is misconfigured
 
-**解决方案**:
-1. 确保已安装所有依赖:
+**Solution**:
+1. Ensure all dependencies are installed:
    ```bash
    pip install -r requirements.txt
    ```
 
-2. 确保在虚拟环境中运行:
+2. Ensure you are running in a virtual environment:
    ```bash
    python -m venv venv
-   source venv/bin/activate  # 在 Windows 上: venv\Scripts\activate
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
    ```
 
-3. 检查 Python 版本（需要 3.10+）:
+3. Check Python version (requires 3.10+):
    ```bash
    python --version
    ```
 
 ---
 
-### 问题：配置文件加载失败
+### Issue: Configuration File Loading Failure
 
-**症状**:
+**Symptoms**:
 ```
 Error loading config file: config.json not found
 ```
 
-**原因**: 配置文件路径不正确或文件格式错误
+**Cause**: Configuration file path is incorrect or file format is invalid
 
-**解决方案**:
-1. 确保 `config.json` 在项目根目录
-2. 验证 JSON 格式:
+**Solution**:
+1. Ensure `config.json` is in the project root directory
+2. Validate JSON format:
    ```bash
    python -m json.tool config.json
    ```
 
-3. 使用有效的配置模板:
+3. Use a valid configuration template:
    ```json
    {
      "model": {
@@ -78,40 +78,40 @@ Error loading config file: config.json not found
 
 ---
 
-## API 和网络
+## API and Network
 
-### 问题：没有配置 API 提供商
+### Issue: No API Provider Configured
 
-**症状**:
+**Symptoms**:
 ```
 RuntimeError: No API provider configured
 ```
 
-**原因**: 未设置 API 密钥或提供商配置不正确
+**Cause**: API key is not set or provider configuration is incorrect
 
-**解决方案**:
+**Solution**:
 
-选择以下任一方式配置 API 密钥（优先级从高到低）：
+Configure the API key using one of the following methods (in order of priority):
 
-**方法 1：环境变量（推荐）**
+**Method 1: Environment Variables (Recommended)**
 ```bash
 export ANTHROPIC_API_KEY="your-anthropic-key"
-export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # 可选
+export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
 
 python -m src.main
 ```
 
-**方法 2：.env 文件**
+**Method 2: .env File**
 ```bash
-# 复制示例文件
+# Copy the example file
 cp .env.example .env
 
-# 编辑 .env 并添加：
+# Edit .env and add:
 ANTHROPIC_API_KEY=your-key
 ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
 ```
 
-**方法 3：config.json**
+**Method 3: config.json**
 ```json
 {
   "model": {
@@ -121,34 +121,34 @@ ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
 }
 ```
 
-**验证配置**:
+**Verify Configuration**:
 ```bash
 python -m src.main --verbose
-# 输出中应该显示 "Model loaded: claude-sonnet-4-5-20250929"
+# Output should display "Model loaded: claude-sonnet-4-5-20250929"
 ```
 
 ---
 
-### 问题：API 连接超时
+### Issue: API Connection Timeout
 
-**症状**:
+**Symptoms**:
 ```
 TimeoutError: Request to API timed out after 30 seconds
 ```
 
-**原因**: 网络连接慢或 API 服务响应慢
+**Cause**: Slow network connection or slow API service response
 
-**解决方案**:
-1. 检查网络连接:
+**Solution**:
+1. Check network connectivity:
    ```bash
    ping api.anthropic.com
    ```
 
-2. 查看你的 API 配额是否已用完（在 Anthropic 控制面板检查）
+2. Check your API quota in the Anthropic dashboard
 
-3. 重试请求（系统会自动重试）
+3. Retry the request (the system will automatically retry)
 
-4. 在 `config.json` 中增加超时时间（如果支持）:
+4. Increase timeout duration in `config.json` (if supported):
    ```json
    {
      "timeout_seconds": 60
@@ -157,92 +157,92 @@ TimeoutError: Request to API timed out after 30 seconds
 
 ---
 
-### 问题：API 返回 401 Unauthorized
+### Issue: API Returns 401 Unauthorized
 
-**症状**:
+**Symptoms**:
 ```
 APIError: 401 Unauthorized - Invalid API key
 ```
 
-**原因**: API 密钥错误或过期
+**Cause**: Incorrect or expired API key
 
-**解决方案**:
-1. 检查 API 密钥是否正确复制（注意空格）
-2. 从 Anthropic 控制面板重新生成 API 密钥
-3. 更新环境变量或配置文件
-4. 重启应用
+**Solution**:
+1. Verify that the API key is copied correctly (check for extra spaces)
+2. Regenerate the API key from the Anthropic dashboard
+3. Update environment variables or configuration file
+4. Restart the application
 
 ---
 
-## 输入和输出
+## Input and Output
 
-### 问题：命令自动补全不工作
+### Issue: Command Autocomplete Not Working
 
-**症状**:
-- Tab 键无响应
-- 补全显示错误的命令
-- "/" 前缀被删除
+**Symptoms**:
+- Tab key does not respond
+- Autocomplete displays incorrect commands
+- "/" prefix is removed
 
-**原因**: Prompt-Toolkit 配置或 CommandCompleter 问题
+**Cause**: Prompt-Toolkit configuration or CommandCompleter issue
 
-**解决方案**:
-1. 确保输入以 "/" 开头（例如 `/he<TAB>` 而不是 `he<TAB>`）
+**Solution**:
+1. Ensure input starts with "/" (for example, `/he<TAB>` rather than `he<TAB>`)
 
-2. 检查详细信息:
+2. Check details using verbose mode:
    ```bash
    python -m src.main --verbose
-   # 查找 "CommandCompleter" 相关信息
+   # Look for information related to "CommandCompleter"
    ```
 
-3. 尝试重新启动应用
+3. Try restarting the application
 
-4. 查看修复记录：[hotfixes/v2025.01.13.2-fix-tab-autocomplete.md](../hotfixes/v2025.01.13.2-fix-tab-autocomplete.md)
+4. Check the fix record: [hotfixes/v2025.01.13/2-fix-tab-autocomplete.md](./hotfixes/v2025.01.13/2-fix-tab-autocomplete.md)
 
 ---
 
-### 问题：Markdown 没有被渲染
+### Issue: Markdown Not Rendering
 
-**症状**:
-- 输出显示原始 Markdown 语法
-- 代码块没有高亮
-- 表格显示为文本
+**Symptoms**:
+- Output displays raw Markdown syntax
+- Code blocks are not highlighted
+- Tables display as text
 
-**原因**: Rich 库配置或输出级别不适合
+**Cause**: Rich library configuration or output level is not suitable
 
-**解决方案**:
-1. 检查输出级别：
+**Solution**:
+1. Check the output level:
    ```bash
-   # 在应用中运行
-   /status  # 查看 "Output level"
+   # In the application, run:
+   /status  # Check "Output level"
    ```
 
-2. 确保输出级别为 "normal"（不是 "quiet"）:
+2. Ensure output level is set to "normal" (not "quiet"):
    ```bash
    /quiet off
    ```
 
-3. 验证 Rich 库已正确安装:
+3. Verify that the Rich library is installed correctly:
    ```bash
    pip show rich
    ```
 
-4. 尝试重新启动应用
+4. Try restarting the application
 
 ---
 
-### 问题：颜色和样式显示错误
+### Issue: Colors and Styles Display Incorrectly
 
-**症状**:
-- 输出全是颜色代码
-- 终端显示奇怪的字符
-- 样式不一致
+**Symptoms**:
+- Output displays only color codes
+- Terminal shows strange characters
+- Styling is inconsistent
 
-**原因**: 终端不支持 ANSI 颜色或环境变量配置
+**Cause**: Terminal does not support ANSI colors or environment variable configuration issue
 
-**解决方案**:
-1. 检查终端是否支持颜色（大多数现代终端都支持）
+**Solution**:
+1. Check if your terminal supports colors (most modern terminals do)
 
-2. 在 `config.json` 中禁用颜色（如果需要）:
+2. Disable colors in `config.json` (if needed):
    ```json
    {
      "ui": {
@@ -251,140 +251,140 @@ APIError: 401 Unauthorized - Invalid API key
    }
    ```
 
-3. 对于 Windows，使用 Windows Terminal 或启用 ANSI 支持
+3. For Windows, use Windows Terminal or enable ANSI support
 
-4. 对于 SSH 会话，确保使用了 `-X` 或 `-Y` 标志（如果需要）
+4. For SSH sessions, ensure you are using the `-X` or `-Y` flag (if needed)
 
 ---
 
-## 工具执行
+## Tool Execution
 
-### 问题：工具执行权限被拒绝
+### Issue: Tool Execution Permission Denied
 
-**症状**:
+**Symptoms**:
 ```
 PermissionError: Operation not permitted
 ```
 
-**原因**: 工具被权限系统拒绝或文件/目录权限不足
+**Cause**: Tool is rejected by the permission system or insufficient file/directory permissions
 
-**解决方案**:
-1. 检查权限级别：
+**Solution**:
+1. Check the permission level:
    ```bash
-   /status  # 查看权限设置
+   /status  # Check permission settings
    ```
 
-2. 对于 NORMAL 权限的工具，确认对话中的确认提示
+2. For tools with NORMAL permissions, confirm the confirmation prompt in the conversation
 
-3. 检查文件/目录权限:
+3. Check file/directory permissions:
    ```bash
-   # 对于文件操作工具
+   # For file operation tools
    ls -la /path/to/file
-   chmod 644 /path/to/file  # 如果需要
+   chmod 644 /path/to/file  # If needed
    ```
 
-4. 使用适当的标志运行应用:
+4. Run the application with the appropriate flag:
    ```bash
-   # 仅对测试或信任的环境
+   # For testing or trusted environments only
    python -m src.main --auto-approve-all
    ```
 
 ---
 
-### 问题：工具执行超时
+### Issue: Tool Execution Timeout
 
-**症状**:
+**Symptoms**:
 ```
 TimeoutError: Tool execution timed out after 30 seconds
 ```
 
-**原因**: 工具执行时间过长或程序被锁定
+**Cause**: Tool execution takes too long or program is hung
 
-**解决方案**:
-1. 检查是否有后台进程占用资源
+**Solution**:
+1. Check for background processes consuming resources
 
-2. 尝试重新启动应用
+2. Try restarting the application
 
-3. 对于长时间运行的命令，增加超时时间（在 `config.json` 中配置，如果支持）
+3. For long-running commands, increase timeout duration (configure in `config.json` if supported)
 
-4. 尝试简化命令或分成多个步骤
+4. Try simplifying the command or breaking it into multiple steps
 
 ---
 
-### 问题：文件操作工具无法找到文件
+### Issue: File Operation Tool Cannot Find File
 
-**症状**:
+**Symptoms**:
 ```
 FileNotFoundError: [Errno 2] No such file or directory
 ```
 
-**原因**: 文件路径错误或文件不存在
+**Cause**: File path is incorrect or file does not exist
 
-**解决方案**:
-1. 验证文件路径是否正确（使用绝对路径更可靠）
+**Solution**:
+1. Verify the file path is correct (using absolute paths is more reliable)
 
-2. 使用 Glob 工具查找文件:
+2. Use the Glob tool to find files:
    ```bash
-   # 在对话中询问 Agent
+   # Ask the Agent in the conversation
    # "find all .py files in src/"
    ```
 
-3. 检查当前工作目录:
+3. Check the current working directory:
    ```bash
-   # Agent 会显示工作目录
+   # The Agent will display the working directory
    /status
    ```
 
-4. 确保文件权限允许读取:
+4. Ensure file permissions allow reading:
    ```bash
    ls -la /path/to/file
    ```
 
 ---
 
-### 问题：Bash 工具返回错误退出码
+### Issue: Bash Tool Returns Error Exit Code
 
-**症状**:
+**Symptoms**:
 ```
 Command failed with exit code 1
 ```
 
-**原因**: 执行的命令有问题
+**Cause**: The executed command encountered an error
 
-**解决方案**:
-1. 查看完整的错误消息（使用 `--verbose` 标志）
+**Solution**:
+1. Check the complete error message (use the `--verbose` flag)
 
-2. 直接在终端运行命令以验证:
+2. Run the command directly in terminal to verify:
    ```bash
-   # 复制命令并在终端中运行
+   # Copy the command and run it in the terminal
    your-command-here
    ```
 
-3. 检查命令的依赖是否已安装
+3. Check if command dependencies are installed
 
-4. 验证命令的权限和所有权
+4. Verify command permissions and ownership
 
 ---
 
-## MCP 和 Hook
+## MCP and Hooks
 
-### 问题：MCP 服务器无法加载
+### Issue: MCP Server Cannot Load
 
-**症状**:
+**Symptoms**:
 ```
 Error loading MCP servers
 RuntimeError: Failed to start MCP server: filesystem
 ```
 
-**原因**: MCP 服务器配置错误或依赖缺失
+**Cause**: MCP server configuration is incorrect or dependencies are missing
 
-**解决方案**:
-1. 检查 MCP 是否已安装:
+**Solution**:
+1. Check if MCP is installed:
    ```bash
    pip install mcp
    ```
 
-2. 验证 `config.json` 中的 MCP 配置:
+2. Verify MCP configuration in `config.json`:
    ```json
    {
      "mcp_servers": [
@@ -398,79 +398,79 @@ RuntimeError: Failed to start MCP server: filesystem
    }
    ```
 
-3. 检查 Node.js 是否已安装（用于 npx）:
+3. Check if Node.js is installed (for npx):
    ```bash
    node --version
    npm --version
    ```
 
-4. 手动测试 MCP 服务器:
+4. Test the MCP server manually:
    ```bash
    npx @modelcontextprotocol/server-filesystem .
    ```
 
-5. 使用 `--verbose` 标志查看详细错误:
+5. Use the `--verbose` flag to see detailed errors:
    ```bash
    python -m src.main --verbose
    ```
 
 ---
 
-### 问题：Hook 未执行
+### Issue: Hook Not Executing
 
-**症状**:
-- Hook 在 settings.json 中配置但未执行
-- 特定事件没有触发 Hook
+**Symptoms**:
+- Hook is configured in settings.json but not executing
+- Specific event does not trigger the hook
 
-**原因**: Hook 配置错误或事件名称不匹配
+**Cause**: Hook configuration is incorrect or event name does not match
 
-**解决方案**:
-1. 验证 Hook 配置文件位置：
-   - 全局：`~/.tiny-claude/settings.json`
-   - 项目：`.tiny-claude/settings.json`
-   - 本地：`.tiny-claude/settings.local.json`（gitignored）
+**Solution**:
+1. Verify the hook configuration file location:
+   - Global: `~/.tiny-claude/settings.json`
+   - Project: `.tiny-claude/settings.json`
+   - Local: `.tiny-claude/settings.local.json` (gitignored)
 
-2. 检查 Hook 配置的 JSON 格式:
+2. Check JSON format of hook configuration:
    ```bash
    python -m json.tool ~/.tiny-claude/settings.json
    ```
 
-3. 验证事件名称是否正确（例如 `on_tool_execute`, `on_message_received`）
+3. Verify event name is correct (e.g., `on_tool_execute`, `on_message_received`)
 
-4. 检查 Hook 命令是否可执行:
+4. Check if hook command is executable:
    ```bash
-   # 如果是 shell 命令
+   # If it is a shell command
    bash -c "your-command"
 
-   # 如果是 Python 代码
+   # If it is Python code
    python -c "your-code"
    ```
 
-5. 查看日志或使用 `--verbose` 模式调试
+5. Check logs or use `--verbose` mode for debugging
 
 ---
 
-### 问题：Hook 加载异常
+### Issue: Hook Loading Exception
 
-**症状**:
+**Symptoms**:
 ```
 Error loading hooks: Invalid hook configuration
 SyntaxError: invalid syntax in hook code
 ```
 
-**原因**: Hook 配置或代码有语法错误
+**Cause**: Hook configuration or code has syntax error
 
-**解决方案**:
-1. 检查 Hook 配置的 JSON 格式
+**Solution**:
+1. Check JSON format of hook configuration
 
-2. 如果使用 Python 代码，验证语法:
+2. If using Python code, verify the syntax:
    ```bash
    python -m py_compile your-hook-code.py
    ```
 
-3. 使用 JSON 验证工具检查配置
+3. Use a JSON validation tool to check configuration
 
-4. 从简单的 Hook 开始测试:
+4. Start with a simple hook for testing:
    ```json
    {
      "hooks": [
@@ -486,30 +486,30 @@ SyntaxError: invalid syntax in hook code
 
 ---
 
-## 异步和并发
+## Asynchronous and Concurrency
 
-### 问题：asyncio 事件循环冲突
+### Issue: asyncio Event Loop Conflict
 
-**症状**:
+**Symptoms**:
 ```
 RuntimeError: asyncio.run() cannot be called from a running event loop
 ```
 
-**原因**: 在已有运行中的事件循环中尝试创建新事件循环
+**Cause**: Attempting to create a new event loop while another is already running
 
-**解决方案**:
-1. 确保使用了异步方法 `async_get_input()` 而不是同步的 `get_input()`
+**Solution**:
+1. Ensure you are using the async method `async_get_input()` instead of the synchronous `get_input()`
 
-2. 查看修复记录：[hotfixes/v2025.01.13.1-fix-asyncio-loop.md](../hotfixes/v2025.01.13.1-fix-asyncio-loop.md)
+2. Check the fix record: [hotfixes/v2025.01.13/1-fix-asyncio-loop.md](./hotfixes/v2025.01.13/1-fix-asyncio-loop.md)
 
-3. 如果在自己的代码中遇到此错误，检查是否已有事件循环运行:
+3. If encountering this error in your own code, check if an event loop is already running:
    ```python
    import asyncio
 
-   # 不要使用：
+   # Do not use:
    # asyncio.run(your_async_function())
 
-   # 应该使用：
+   # Should use:
    try:
        loop = asyncio.get_running_loop()
    except RuntimeError:
@@ -521,30 +521,30 @@ RuntimeError: asyncio.run() cannot be called from a running event loop
 
 ---
 
-## 文件和权限
+## Files and Permissions
 
-### 问题：无法创建历史文件
+### Issue: Cannot Create History File
 
-**症状**:
+**Symptoms**:
 ```
 PermissionError: [Errno 13] Permission denied: '~/.cache/tiny_claude_code/'
 ```
 
-**原因**: 缺少目录权限或父目录不存在
+**Cause**: Missing directory permissions or parent directory does not exist
 
-**解决方案**:
-1. 创建缓存目录:
+**Solution**:
+1. Create the cache directory:
    ```bash
    mkdir -p ~/.cache/tiny_claude_code/
    ```
 
-2. 检查权限:
+2. Check permissions:
    ```bash
    ls -ld ~/.cache/tiny_claude_code/
    chmod 755 ~/.cache/tiny_claude_code/
    ```
 
-3. 确保有写权限:
+3. Ensure write permissions:
    ```bash
    touch ~/.cache/tiny_claude_code/.tiny_claude_code_history
    chmod 644 ~/.cache/tiny_claude_code/.tiny_claude_code_history
@@ -552,109 +552,109 @@ PermissionError: [Errno 13] Permission denied: '~/.cache/tiny_claude_code/'
 
 ---
 
-### 问题：CLAUDE.md 初始化失败
+### Issue: CLAUDE.md Initialization Failure
 
-**症状**:
+**Symptoms**:
 ```
 Error initializing CLAUDE.md
 FileExistsError: CLAUDE.md already exists
 ```
 
-**原因**: CLAUDE.md 文件已存在
+**Cause**: CLAUDE.md file already exists
 
-**解决方案**:
-1. 如果想更新现有 CLAUDE.md，手动编辑或删除后重新初始化:
+**Solution**:
+1. If you want to update the existing CLAUDE.md, edit it manually or delete it and reinitialize:
    ```bash
-   # 删除现有文件
+   # Delete existing file
    rm CLAUDE.md
 
-   # 在应用中运行
+   # In the application, run:
    /init
    ```
 
-2. 如果想保留现有文件，跳过初始化
+2. If you want to keep the existing file, skip initialization
 
 ---
 
-## 性能问题
+## Performance Issues
 
-### 问题：应用响应缓慢
+### Issue: Application Response Slow
 
-**症状**:
-- 输入延迟
-- 输出渲染缓慢
-- 高 CPU 使用率
+**Symptoms**:
+- Input lag
+- Slow output rendering
+- High CPU usage
 
-**原因**: 上下文窗口过大、工具输出巨大或系统资源不足
+**Cause**: Context window is too large, tool output is huge, or insufficient system resources
 
-**解决方案**:
-1. 检查上下文窗口大小:
+**Solution**:
+1. Check context window size:
    ```bash
-   /status  # 查看 "Context: XXXX/8000 tokens"
+   /status  # Check "Context: XXXX/8000 tokens"
    ```
 
-2. 清除旧对话:
+2. Clear old conversations:
    ```bash
-   /clear  # 清除当前对话
+   /clear  # Clear current conversation
    ```
 
-3. 检查待办项列表:
+3. Check the task list:
    ```bash
    /todos
    ```
 
-4. 关闭不需要的 MCP 服务器（在 `config.json` 中设置 `"enabled": false`）
+4. Disable unnecessary MCP servers (set `"enabled": false` in `config.json`)
 
-5. 减少历史行数（在配置中调整，如果支持）
+5. Reduce history line count (adjust in configuration if supported)
 
 ---
 
-### 问题：高内存使用
+### Issue: High Memory Usage
 
-**症状**:
-- 内存使用不断增加
-- 应用变得无响应
-- 系统整体变慢
+**Symptoms**:
+- Memory usage continues to increase
+- Application becomes unresponsive
+- Overall system becomes slow
 
-**原因**: 内存泄漏或大消息历史
+**Cause**: Memory leak or large message history
 
-**解决方案**:
-1. 重启应用（完全清除内存）
+**Solution**:
+1. Restart the application (fully clears memory)
 
-2. 使用 `/clear` 清除对话历史
+2. Use `/clear` to clear conversation history
 
-3. 保存当前会话然后重新启动:
+3. Save current session and then restart:
    ```bash
    /save important-session
    /exit
    python -m src.main
    ```
 
-4. 检查是否有无限循环的 Hook（如果自定义了 Hook）
+4. Check for infinite loop hooks (if custom hooks are defined)
 
 ---
 
-## 还是有问题？
+## Still Having Issues?
 
-如果以上解决方案都不能解决问题：
+If the above solutions do not resolve your issue:
 
-1. 查看详细日志:
+1. Check detailed logs:
    ```bash
    python -m src.main --verbose
    ```
 
-2. 查看相关文档：
-   - [README.md](../README.md) - 项目概览
-   - [architecture_guide.md](./architecture_guide.md) - 系统架构
-   - [development_guide.md](./development_guide.md) - 开发指南
+2. Check related documentation:
+   - [README.md](../README.md) - Project overview
+   - [architecture_guide.md](./architecture_guide.md) - System architecture
+   - [development_guide.md](./development_guide.md) - Development guide
 
-3. 检查 [GitHub Issues](https://github.com/your-username/build-your-own-claude-code/issues)
+3. Check [GitHub Issues](https://github.com/your-username/build-your-own-claude-code/issues)
 
-4. 创建新 Issue 并包含：
-   - Python 版本和操作系统
-   - 完整的错误信息和堆栈跟踪
-   - 重现问题的步骤
+4. Create a new issue and include:
+   - Python version and operating system
+   - Complete error message and stack trace
+   - Steps to reproduce the issue
 
 ---
 
-**最后更新**: 2025-01-13
+**Last Updated**: 2025-01-13
