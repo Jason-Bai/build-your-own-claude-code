@@ -19,15 +19,15 @@ class PromptInputManager:
     - 鼠标支持
     """
 
-    def __init__(self, history_file: str = ".claude_code_history"):
+    def __init__(self, history_file: str = ".tiny_claude_code_history"):
         """
         初始化输入管理器
 
         Args:
-            history_file: 历史记录文件名（保存在 ~/.cache/claude-code/ 目录下）
+            history_file: 历史记录文件名（保存在 ~/.cache/tiny_claude_code/ 目录下）
         """
         # 创建缓存目录
-        cache_dir = Path.home() / ".cache" / "claude-code"
+        cache_dir = Path.home() / ".cache" / "tiny_claude_code"
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         # 历史记录路径

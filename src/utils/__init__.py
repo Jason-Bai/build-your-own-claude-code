@@ -1,7 +1,7 @@
 """Utility modules"""
 
 from .output import OutputFormatter, OutputLevel
-from .prompt_input import PromptInputManager, get_input_manager, reset_input_manager
+from .input import PromptInputManager, get_input_manager, reset_input_manager
 
 __all__ = [
     "OutputFormatter",
