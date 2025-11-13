@@ -85,6 +85,25 @@ Records of identified and fixed production issues:
 
 👉 **[docs/hotfixes/](./docs/hotfixes/)**
 
+### Recent Fixes (2025-01-13)
+
+- **[v2025.01.13.1](./docs/hotfixes/v2025.01.13/1-fix-asyncio-loop.md)** - asyncio Event Loop Conflict ✅
+- **[v2025.01.13.2](./docs/hotfixes/v2025.01.13/2-fix-tab-autocomplete.md)** - Tab Autocomplete "/" Prefix Issue ✅
+- **[v2025.01.13.3](./docs/hotfixes/v2025.01.13/3-fix-application-startup.md)** - Application Startup Errors ✅
+- **[v2025.01.13.4](./docs/hotfixes/v2025.01.13/4-fix-optional-imports.md)** - Optional Client Import Errors ✅
+- **[v2025.01.13.5](./docs/hotfixes/v2025.01.13/5-fix-gemini-response.md)** - Google Gemini API Response Handling ✅
+
+## 🚀 What's Next
+
+Planned features for upcoming releases:
+
+👉 **[docs/features/v0.0.1/](./docs/features/v0.0.1/)**
+
+- **[P4](./docs/features/v0.0.1/p4-sandbox-execution.md)** - Sandbox Execution (Security Isolation) 📋
+- **[P5](./docs/features/v0.0.1/p5-conditional-routing.md)** - Conditional Routing (Flow Control) 📋
+- **[P6](./docs/features/v0.0.1/p6-checkpoint-persistence.md)** - Checkpoint Persistence (State Management) 📋
+- **[P7](./docs/features/v0.0.1/p7-multi-agent-orchestration.md)** - Multi-Agent Orchestration (Collaboration) 📋
+
 ## ❓ Troubleshooting
 
 Encountered problems? Find diagnostic guides and solutions for common issues:

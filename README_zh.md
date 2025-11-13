@@ -85,6 +85,25 @@ python -m src.main
 
 👉 **[docs/hotfixes/](./docs/hotfixes/)**
 
+### 近期修复 (2025-01-13)
+
+- **[v2025.01.13.1](./docs/hotfixes/v2025.01.13/1-fix-asyncio-loop.md)** - asyncio 事件循环冲突 ✅
+- **[v2025.01.13.2](./docs/hotfixes/v2025.01.13/2-fix-tab-autocomplete.md)** - Tab 自动补全 "/" 前缀问题 ✅
+- **[v2025.01.13.3](./docs/hotfixes/v2025.01.13/3-fix-application-startup.md)** - 应用启动错误 ✅
+- **[v2025.01.13.4](./docs/hotfixes/v2025.01.13/4-fix-optional-imports.md)** - 可选客户端导入错误 ✅
+- **[v2025.01.13.5](./docs/hotfixes/v2025.01.13/5-fix-gemini-response.md)** - Google Gemini API 响应处理 ✅
+
+## 🚀 接下来
+
+即将发布的计划功能：
+
+👉 **[docs/features/v0.0.1/](./docs/features/v0.0.1/)**
+
+- **[P4](./docs/features/v0.0.1/p4-sandbox-execution.md)** - 沙箱执行（安全隔离）📋
+- **[P5](./docs/features/v0.0.1/p5-conditional-routing.md)** - 条件路由（流程控制）📋
+- **[P6](./docs/features/v0.0.1/p6-checkpoint-persistence.md)** - Checkpoint 持久化（状态管理）📋
+- **[P7](./docs/features/v0.0.1/p7-multi-agent-orchestration.md)** - 多 Agent 编排（协作）📋
+
 ## ❓ 故障排除
 
 遇到问题？常见问题的诊断和解决方案：
