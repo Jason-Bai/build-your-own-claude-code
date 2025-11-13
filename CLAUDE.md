@@ -1,233 +1,240 @@
 # Build Your Own Claude Code - Project Context
 
-## 项目概述
+## Project Overview
 
-一个功能完整、生产就绪的 AI 编码助手实现，灵感来自 Anthropic 的 Claude Code。
-本项目展示了现代 AI Agent 架构，包括高级状态管理、上下文处理、多提供商 LLM 支持、MCP 集成和可扩展的插件系统。
+A feature-complete, production-ready implementation of an AI coding assistant inspired by Anthropic's Claude Code. This project demonstrates modern AI agent architecture with advanced state management, context handling, multi-provider LLM support, MCP integration, and an extensible plugin system.
 
-**项目类型：** Python CLI 应用 + AI Agent 框架
+**Project Type:** Python CLI Application + AI Agent Framework
 
-## 核心特性
+---
 
-### 🎯 AI Agent 系统
-- **增强型 Agent** (`src/agents/enhanced_agent.py`)
-  - 有限状态机管理 (IDLE → THINKING → USING_TOOL → COMPLETED)
-  - 动态工具注册和执行
-  - 智能重试逻辑和错误处理
-  - Token 数量追踪和管理
+## Core Features
 
-### 📥 高级输入体验 (Phase 1 - Prompt-Toolkit)
-- **智能命令自动补全**
-  - 自定义 CommandCompleter 类
-  - "/" 前缀命令智能匹配
-  - 大小写不敏感补全
-  - 支持多行输入中的命令补全
+### 🎯 AI Agent System
+- **Enhanced Agent** (`src/agents/enhanced_agent.py`)
+  - Finite State Machine management (IDLE → THINKING → USING_TOOL → COMPLETED)
+  - Dynamic tool registration and execution
+  - Intelligent retry logic and error handling
+  - Token count tracking and management
 
-- **历史记录管理**
-  - 持久化历史到 `~/.cache/tiny_claude_code/`
-  - 搜索历史 (Ctrl+R)
-  - 浏览历史 (Up/Down)
+### 📥 Advanced Input Experience (Phase 1 - Prompt-Toolkit)
+- **Intelligent Command Autocomplete**
+  - Custom CommandCompleter class
+  - "/" prefix command smart matching
+  - Case-insensitive completion
+  - Multi-line input support
 
-- **键盘快捷键**
-  - Ctrl+A/E: 行首/行尾
-  - Ctrl+K/U: 删除到行尾/行首
-  - Ctrl+W: 删除前一个单词
-  - Alt+Enter: 多行编辑
-  - 鼠标支持: 选择、复制、粘贴
+- **History Management**
+  - Persistent history to `~/.cache/tiny_claude_code/`
+  - Search history (Ctrl+R)
+  - Browse history (Up/Down)
 
-- **异步兼容性**
-  - `async_get_input()` 与 asyncio 事件循环兼容
-  - `async_get_multiline_input()` 用于复杂输入
+- **Keyboard Shortcuts**
+  - Ctrl+A/E: Beginning/End of line
+  - Ctrl+K/U: Delete to end/beginning of line
+  - Ctrl+W: Delete previous word
+  - Alt+Enter: Multi-line editing
+  - Mouse support: Select, copy, paste
 
-### 📤 高级输出体验 (Phase 2 - Rich)
-- **彩色样式输出**
-  - Success: 绿色
-  - Error: 红色加粗
-  - Info: 青色
-  - Warning: 黄色
+- **Async Compatibility**
+  - `async_get_input()` compatible with asyncio event loops
+  - `async_get_multiline_input()` for complex input
 
-- **Markdown 自动渲染**
-  - 自动检测 Markdown 元素
-  - 在 Panel 中渲染
-  - 支持标题、列表、引用、代码块
+### 📤 Advanced Output Experience (Phase 2 - Rich)
+- **Colored Styled Output**
+  - Success: Green
+  - Error: Red bold
+  - Info: Cyan
+  - Warning: Yellow
 
-- **代码语法高亮**
-  - Monokai 主题
-  - 行号和缩进指南
-  - 多语言支持
+- **Automatic Markdown Rendering**
+  - Auto-detect Markdown elements
+  - Render in Panel
+  - Support for headings, lists, quotes, code blocks
 
-- **表格和 Panel**
-  - 格式化表格显示
-  - 带样式的 Panel 包装
-  - 可扩展的布局
+- **Code Syntax Highlighting**
+  - Monokai theme
+  - Line numbers and indentation guides
+  - Multi-language support
 
-### 🔧 工具系统
-- **7 个内置工具**
-  - Read: 文件读取
-  - Write: 文件写入
-  - Edit: 文件编辑
-  - Bash: 命令执行
-  - Glob: 文件模式匹配
-  - Grep: 内容搜索
-  - Todo: 任务追踪
+- **Tables and Panels**
+  - Formatted table display
+  - Styled Panel wrapping
+  - Expandable layouts
 
-- **三层权限系统**
-  - SAFE: 只读操作 (自动批准)
-  - NORMAL: 标准操作 (需确认)
-  - DANGEROUS: 危险操作 (明确确认)
+### 🔧 Tool System
+- **7 Built-in Tools**
+  - Read: File reading
+  - Write: File writing
+  - Edit: File editing
+  - Bash: Command execution
+  - Glob: File pattern matching
+  - Grep: Content search
+  - Todo: Task tracking
 
-- **智能重试机制**
-  - 指数退避
-  - 错误恢复
-  - 超时处理
+- **Three-Tier Permission System**
+  - SAFE: Read-only operations (auto-approved)
+  - NORMAL: Standard operations (requires confirmation)
+  - DANGEROUS: Destructive operations (explicit confirmation)
 
-### 🤖 LLM 客户端抽象
-- **多提供商支持**
-  - Anthropic Claude (完全验证)
-  - OpenAI GPT (开发中)
-  - Google Gemini (开发中)
+- **Intelligent Retry Mechanism**
+  - Exponential backoff
+  - Error recovery
+  - Timeout handling
 
-- **统一接口**
-  - 相同的 API 用于所有提供商
-  - 自动模型检测
-  - 流式和非流式响应
+### 🤖 LLM Client Abstraction
+- **Multi-Provider Support**
+  - Anthropic Claude (fully verified)
+  - OpenAI GPT (in development)
+  - Google Gemini (in development)
 
-### 🪝 Hook 系统
-- **事件驱动的可扩展性**
-  - 工具执行前/后
-  - Agent 状态变化
-  - 消息发送/接收
+- **Unified Interface**
+  - Same API for all providers
+  - Automatic model detection
+  - Streaming and non-streaming responses
 
-- **安全的 Python 代码加载**
-  - AST 验证
-  - 限制导入
-  - 执行沙盒
+### 🪝 Hook System
+- **Event-Driven Extensibility**
+  - Before/after tool execution
+  - Agent state changes
+  - Message send/receive
 
-- **持久化配置**
-  - 全局: `~/.tiny-claude/settings.json`
-  - 项目: `.tiny-claude/settings.json`
-  - 本地: `.tiny-claude/settings.local.json`
+- **Secure Python Code Loading**
+  - AST validation
+  - Restricted imports
+  - Execution sandbox
 
-### 📊 实时反馈系统 (Phase 3)
-- **事件总线**
-  - 发布-订阅消息传递
-  - 异步事件处理
-  - 事件优先级
+- **Persistent Configuration**
+  - Global: `~/.tiny-claude/settings.json`
+  - Project: `.tiny-claude/settings.json`
+  - Local: `.tiny-claude/settings.local.json`
 
-- **完整的事件流**
-  - 工具调用日志
-  - Token 使用追踪
-  - 状态变化通知
+### 📊 Real-Time Feedback System (Phase 3)
+- **Event Bus**
+  - Pub-sub messaging
+  - Async event handling
+  - Event priority
 
-## 目录结构
+- **Complete Event Stream**
+  - Tool invocation logging
+  - Token usage tracking
+  - State change notifications
+
+---
+
+## Directory Structure
 
 ```
 build-your-own-claude-code/
 ├── src/
-│   ├── agents/              # Agent 核心
+│   ├── agents/              # Agent core
 │   │   ├── enhanced_agent.py
 │   │   ├── state.py
 │   │   ├── context_manager.py
 │   │   ├── tool_manager.py
 │   │   ├── permission_manager.py
 │   │   └── feedback.py
-│   ├── clients/             # LLM 客户端
+│   ├── clients/             # LLM clients
 │   │   ├── base.py
 │   │   ├── anthropic.py
 │   │   ├── openai.py
 │   │   ├── google.py
 │   │   └── factory.py
-│   ├── tools/               # 工具系统
+│   ├── tools/               # Tool system
 │   │   ├── base.py
 │   │   ├── file_ops.py
 │   │   ├── bash.py
 │   │   ├── search.py
 │   │   ├── todo.py
 │   │   └── executor.py
-│   ├── commands/            # CLI 命令
+│   ├── commands/            # CLI commands
 │   │   ├── base.py
 │   │   ├── registry.py
 │   │   ├── conversation_commands.py
 │   │   ├── workspace_commands.py
 │   │   └── settings_commands.py
-│   ├── utils/               # 工具函数
-│   │   ├── input.py         # Prompt-Toolkit 增强输入
-│   │   ├── output.py        # Rich 增强输出
+│   ├── utils/               # Utilities
+│   │   ├── input.py         # Prompt-Toolkit enhanced input
+│   │   ├── output.py        # Rich enhanced output
 │   │   └── formatting.py
-│   ├── hooks/               # Hook 系统
+│   ├── hooks/               # Hook system
 │   │   ├── manager.py
 │   │   ├── types.py
 │   │   ├── config_loader.py
 │   │   ├── validator.py
 │   │   └── secure_loader.py
-│   ├── events/              # 事件系统
+│   ├── events/              # Event system
 │   │   ├── bus.py
 │   │   ├── types.py
 │   │   └── __init__.py
-│   ├── mcps/                # MCP 集成
+│   ├── mcps/                # MCP integration
 │   │   ├── client.py
 │   │   └── config.py
-│   ├── prompts/             # 系统提示
+│   ├── prompts/             # System prompts
 │   │   └── system.py
-│   ├── persistence.py       # 对话持久化
-│   └── main.py              # 应用入口
-├── tests/                   # 测试套件
-├── docs/                    # 文档
-├── config.json              # 默认配置
-├── requirements.txt         # 依赖
-├── setup.py                 # 包设置
-└── README.md                # 用户指南
+│   ├── persistence.py       # Conversation persistence
+│   └── main.py              # Application entry point
+├── tests/                   # Test suite
+├── docs/                    # Documentation
+├── config.json              # Default configuration
+├── requirements.txt         # Dependencies
+├── setup.py                 # Package setup
+└── README.md                # User guide
 ```
 
-## 技术栈
+---
 
-### 核心
+## Technology Stack
+
+### Core
 - **Python 3.10+**
-- **asyncio**: 异步编程
-- **Pydantic 2.0+**: 数据验证和类型检查
+- **asyncio**: Asynchronous programming
+- **Pydantic 2.0+**: Data validation and type checking
 
 ### AI/LLM
-- **Anthropic Claude API** (`anthropic>=0.40.0`) - 主要，完全验证
-- **OpenAI API** (`openai`) - 开发中
-- **Google Generative AI** (`google-generativeai`) - 开发中
+- **Anthropic Claude API** (`anthropic>=0.40.0`) - Primary, fully verified
+- **OpenAI API** (`openai`) - In development
+- **Google Generative AI** (`google-generativeai`) - In development
 
-### CLI 增强
-- **Rich 13.0+**: 终端输出格式化
-  - Markdown 渲染
-  - 代码高亮
-  - 表格和 Panel
-- **Prompt-Toolkit 3.0+**: 增强的 CLI 输入
-  - 自动补全
-  - 历史管理
-  - 快捷键
+### CLI Enhancement
+- **Rich 13.0+**: Terminal output formatting
+  - Markdown rendering
+  - Code highlighting
+  - Tables and Panels
+- **Prompt-Toolkit 3.0+**: Enhanced CLI input
+  - Autocomplete
+  - History management
+  - Keyboard shortcuts
 
-### 其他
-- **MCP 1.0+**: Model Context Protocol (可选)
-- **python-dotenv**: 环境变量管理
+### Other
+- **MCP 1.0+**: Model Context Protocol (optional)
+- **python-dotenv**: Environment variable management
 
-## 快速开始
+---
 
-### 安装
+## Quick Start
+
+### Installation
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 配置 API 密钥
+### Configure API Key
 
-**方法 1 - 环境变量 (推荐)**
+**Method 1 - Environment Variables (Recommended)**
 ```bash
 export ANTHROPIC_API_KEY="your-key"
-export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # 可选
+export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
 ```
 
-**方法 2 - .env 文件**
+**Method 2 - .env File**
 ```bash
 cp .env.example .env
-# 编辑 .env 并添加 API 密钥
+# Edit .env and add your API key
 ```
 
-**方法 3 - config.json**
+**Method 3 - config.json**
 ```json
 {
   "model": {
@@ -236,44 +243,48 @@ cp .env.example .env
 }
 ```
 
-### 运行
+### Run the Application
 
 ```bash
-# 基本运行
+# Basic run
 python -m src.main
 
-# 详细模式（显示工具详情、思考过程）
+# Verbose mode (show tool details and thinking process)
 python -m src.main --verbose
 
-# 安静模式（仅显示错误和 Agent 响应）
+# Quiet mode (show only errors and agent responses)
 python -m src.main --quiet
 
-# 自定义配置文件
+# Custom configuration file
 python -m src.main --config my-config.json
 
-# 跳过权限检查 (危险!)
+# Skip permission checks (dangerous!)
 python -m src.main --dangerously-skip-permissions
 ```
 
-## 可用命令
+---
 
-在交互式会话中输入以下命令：
+## Available Commands
 
-- `/help` - 显示所有可用命令
-- `/status` - 显示系统状态 (工具、Token、待办事项)
-- `/todos` - 显示当前任务列表
-- `/save [id]` - 保存当前对话
-- `/load <id>` - 加载已保存的对话
-- `/conversations` - 列出所有已保存的对话
-- `/delete <id>` - 删除对话
-- `/clear` - 清空对话历史
-- `/init` - 初始化项目上下文 (创建 CLAUDE.md)
-- `/quiet on|off` - 切换输出级别
-- `/exit` - 退出应用
+Available commands in the interactive session:
 
-## 配置
+- `/help` - Show all available commands
+- `/status` - Display system status (tools, tokens, todos)
+- `/todos` - Show current task list
+- `/save [id]` - Save current conversation
+- `/load <id>` - Load a saved conversation
+- `/conversations` - List all saved conversations
+- `/delete <id>` - Delete a conversation
+- `/clear` - Clear conversation history
+- `/init` - Initialize project context (create CLAUDE.md)
+- `/quiet on|off` - Toggle output level
+- `/exit` - Exit the application
 
-### config.json 结构
+---
+
+## Configuration
+
+### config.json Structure
 
 ```json
 {
@@ -296,9 +307,11 @@ python -m src.main --dangerously-skip-permissions
 }
 ```
 
-### Hook 配置
+For detailed configuration options, see [config.json](./config.json) in the project root.
 
-在 `~/.tiny-claude/settings.json` 或 `.tiny-claude/settings.json` 中定义：
+### Hook Configuration
+
+Define hooks in `~/.tiny-claude/settings.json` or `.tiny-claude/settings.json`:
 
 ```json
 {
@@ -313,78 +326,105 @@ python -m src.main --dangerously-skip-permissions
 }
 ```
 
-## 项目演进
+For comprehensive hook system details and examples, refer to the [Hook System Development](./docs/development_guide.md#hook-system-development) section in the development guide.
 
-### Phase 1 ✅ - Prompt-Toolkit 输入增强
-- 实现 PromptInputManager 类
-- 异步兼容性修复 (async_get_input)
-- 智能命令自动补全 (CommandCompleter)
-- 历史记录和快捷键支持
+---
 
-### Phase 2 ✅ - Rich 输出增强
-- Rich Console 集成
-- Markdown 自动检测和渲染
-- 代码语法高亮
-- 彩色样式输出
-- 表格和 Panel 支持
+## Project Evolution
 
-### Phase 3 ✅ - 事件驱动实时反馈
-- 事件总线 (EventBus)
-- 完整的事件流
-- 工具执行监控
-- 状态变化通知
+### Phase 1 ✅ - Prompt-Toolkit Input Enhancement
+Implemented advanced CLI input with autocomplete, history, and keyboard shortcuts for improved user experience.
 
-## 文档和代码规范
+**Key Features:**
+- Smart command autocomplete with "/" prefix support
+- Persistent history management (Ctrl+R search)
+- Comprehensive keyboard shortcut support
+- Async-compatible input handling
 
-### 📝 语言要求
+**Details:** See [Prompt-Toolkit Input Enhancement](./docs/features/v0.0.1/p1-input-enhancement.md)
 
-**以下内容必须使用英文：**
+### Phase 2 ✅ - Rich Output Enhancement
+Added beautiful terminal output with Markdown rendering, syntax highlighting, and styled formatting.
 
-1. **README.md** - 项目主入口，面向国际用户
-   - 提供中文备份版本 (README_zh.md)，但主 README 必须是英文
+**Key Features:**
+- Automatic Markdown detection and rendering
+- Code block syntax highlighting with Monokai theme
+- Professional table and panel formatting
+- Colored output for different message types
 
-2. **所有 docs/ 目录下的文档** - 开发者文档、架构设计、故障排除等
-   - `docs/architecture_guide.md` - 英文
-   - `docs/development_guide.md` - 英文
-   - `docs/troubleshooting_guide.md` - 英文
-   - `docs/features/` - 所有功能文档英文
-   - `docs/hotfixes/` - 所有修复文档英文
+**Details:** See [Rich Output Enhancement](./docs/features/v0.0.1/p2-output-enhancement.md)
 
-3. **代码注释和文档字符串** - 所有 Python 源代码中的注释
-   - Docstrings 必须英文 (Google 风格)
-   - 代码行内注释必须英文
-   - 函数/类/模块描述必须英文
+### Phase 3 ✅ - Event-Driven Real-Time Feedback
+Implemented event bus system for pub-sub messaging and real-time event tracking.
 
-4. **Commit 消息** - 保持一致性和可搜索性
-   - 需要英文 commit messages
-   - 可在 commit 消息中添加多语言翻译（可选）
+**Key Features:**
+- EventBus implementation with 17 event types
+- Tool execution event tracking
+- LLM call event notifications
+- State update event stream
 
-### 📚 例外情况
+**Details:** See [Event-Driven Real-Time Feedback](./docs/features/v0.0.1/p3-event-driven-feedback.md)
 
-- CLAUDE.md 本身可以是中文 (内部项目上下文)
-- `.env.example` 中的注释可以是中文
-- 内部 .tiny-claude/ 配置文件注释可以是中文
+---
 
-### ✅ 好处
+## Documentation and Code Standards
 
-- **国际化支持** - 面向全球开发者和用户
-- **搜索引擎友好** - 英文文档更容易被搜索到
-- **GitHub 可见性** - 英文 README 提高项目曝光度
-- **代码维护** - 统一的代码注释语言减少混淆
-- **开源生态** - 符合开源项目的国际标准
+### 📝 Language Requirements
 
-## 开发工作流
+**All of the following must be in English:**
 
-1. 创建功能分支
-2. 实现更改（含英文类型提示和文档字符串）
-3. 在 `tests/` 中添加测试
-4. 运行测试并确保通过
-5. 使用英文更新文档
-6. 创建拉取请求（英文 commit message）
+1. **README.md** - Project main entry point for international users
+   - Chinese backup version (README_zh.md) provided
+   - Main README must be in English
 
-## 常见任务
+2. **All docs/ directory content** - Developer documentation, architecture design, troubleshooting guides
+   - `docs/architecture_guide.md` - English
+   - `docs/development_guide.md` - English
+   - `docs/troubleshooting_guide.md` - English
+   - `docs/features/` - All feature documentation in English
+   - `docs/hotfixes/` - All fix documentation in English
 
-### 添加新工具
+3. **Code comments and docstrings** - All Python source code comments
+   - Docstrings must be in English (Google style)
+   - Inline code comments must be in English
+   - Function/class/module descriptions must be in English
+
+4. **Commit messages** - For consistency and searchability
+   - Commit messages must be in English
+   - Optional: Add multi-language translations in commit messages
+
+### 📚 Exceptions
+
+- CLAUDE.md itself can be in Chinese (internal project context)
+- Comments in `.env.example` can be in Chinese
+- Internal `.tiny-claude/` configuration file comments can be in Chinese
+
+### ✅ Benefits
+
+- **Internationalization Support** - Reach global developers and users
+- **Search Engine Friendly** - English documentation is more easily indexed
+- **GitHub Visibility** - English README improves project exposure
+- **Code Maintenance** - Unified code comment language reduces confusion
+- **Open Source Ecosystem** - Aligns with international open source standards
+
+---
+
+## Development Workflow
+
+1. Create a feature branch
+2. Implement changes with English type hints and docstrings
+3. Add tests in `tests/`
+4. Run tests and ensure they pass
+5. Update documentation in English
+6. Create pull request with English commit messages
+
+For detailed development guidelines, refer to [Development Guide](./docs/development_guide.md).
+
+---
+
+## Common Tasks
+
+### Adding a New Tool
 
 ```python
 from src.tools.base import BaseTool, ToolResult
@@ -393,23 +433,23 @@ class MyTool(BaseTool):
     @property
     def name(self) -> str:
         return "my_tool"
-    
+
     async def execute(self, **params) -> ToolResult:
         return ToolResult(success=True, output="result")
 ```
 
-### 添加新 LLM 提供商
+### Adding a New LLM Provider
 
 ```python
 from src.clients.base import BaseClient
 
 class MyClient(BaseClient):
     async def create_message(self, ...):
-        # 实现
+        # Implementation
         pass
 ```
 
-### 添加新命令
+### Adding a New Command
 
 ```python
 from src.commands.base import Command
@@ -418,49 +458,65 @@ class MyCommand(Command):
     @property
     def name(self) -> str:
         return "mycommand"
-    
+
     async def execute(self, args: str, context) -> str:
         return "result"
 ```
 
-## 故障排除
-
-**没有配置 API 提供商**
-- 确保通过环境变量、.env 文件或 config.json 设置 API 密钥
-- 检查提供商包已安装 (`pip install anthropic`)
-
-**MCP 服务器无法加载**
-- 验证 MCP 包已安装: `pip install mcp`
-- 检查 config.json 中的 MCP 服务器命令和参数
-- 确保已安装 Node.js (用于基于 npx 的服务器)
-
-**上下文窗口超出**
-- 系统在达到 80% 窗口时自动压缩
-- 使用 `/clear` 重置对话
-- 在 config 中调整 `max_context_tokens`
-
-**工具执行失败**
-- 检查文件权限
-- 验证工具参数与 schema 匹配
-- 使用 `--verbose` 查看详细错误消息
-
-## 许可证
-
-MIT
-
-## 项目状态
-
-**生产就绪**: 核心功能完整，持续优化
-
-**最后更新**: 2025-01-13
-
-## 贡献指南
-
-欢迎贡献！请：
-1. Fork 项目
-2. 创建特性分支
-3. 提交拉取请求
+For comprehensive extension guides, see [Extending the Project](./docs/development_guide.md#extending-the-project) in the development guide.
 
 ---
 
-**项目为学习 AI Agent 设计模式和构建实用开发工具的教学资源。**
+## Troubleshooting
+
+For detailed troubleshooting information, refer to the [Troubleshooting Guide](./docs/troubleshooting_guide.md).
+
+**Quick Solutions:**
+
+- **No API provider configured** - Ensure API key is set via environment variable, .env file, or config.json
+- **MCP servers not loading** - Verify MCP package: `pip install mcp`
+- **Context window exceeded** - Use `/clear` to reset conversation
+- **Tool execution fails** - Check file permissions and verify tool parameters
+
+---
+
+## Architecture
+
+For detailed information about the system architecture, design patterns, data flow, and agent state machine, see [Architecture Guide](./docs/architecture_guide.md).
+
+**Key Topics:**
+- Layered architecture design
+- Agent state machine implementation
+- Context window management
+- Tool execution and retry logic
+- Permission system design
+- Event system architecture
+
+---
+
+## License
+
+MIT
+
+---
+
+## Project Status
+
+**Production Ready**: Core functionality is complete and continuously optimized.
+
+**Last Updated**: 2025-01-13
+
+---
+
+## Contributing Guidelines
+
+Contributions are welcome! Please:
+1. Fork the project
+2. Create a feature branch
+3. Submit a pull request with English commit messages
+
+For detailed contribution guidelines, see [Development Guide](./docs/development_guide.md#contribution-process).
+
+---
+
+**This project serves as a learning resource for understanding AI Agent design patterns and building practical development tools.**
