@@ -544,13 +544,13 @@ async def main():
                     OutputFormatter.print_separator()
                 is_first_iteration = False
 
-                # 使用 Prompt-Toolkit 的增强输入，支持：
+                # 使用 Prompt-Toolkit 的增强异步输入，支持：
                 # - Tab: 自动补全命令
                 # - Up/Down: 浏览历史
                 # - Ctrl+R: 搜索历史
                 # - 快捷键: Ctrl+A/E/K/U/W
                 # - 鼠标: 选择、复制、粘贴
-                user_input = input_manager.get_input()
+                user_input = await input_manager.async_get_input()
 
                 if not user_input:
                     continue

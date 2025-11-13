@@ -71,7 +71,10 @@ class PromptInputManager:
 
     def get_input(self, prompt: str = "👤 You: ", default: str = "") -> str:
         """
-        获取用户输入
+        获取用户输入 (同步方法)
+
+        注意：此方法不能在已有运行的 asyncio 事件循环中使用。
+        请在异步上下文中使用 async_get_input() 方法。
 
         支持的增强功能：
         - Tab 键：自动补全命令
@@ -110,9 +113,55 @@ class PromptInputManager:
             # 重新抛出异常，由调用者处理
             raise
 
+    async def async_get_input(self, prompt: str = "👤 You: ", default: str = "") -> str:
+        """
+        异步获取用户输入
+
+        此方法与 asyncio 事件循环兼容，应在异步上下文中使用。
+
+        支持的增强功能：
+        - Tab 键：自动补全命令
+        - Up/Down：浏览历史记录
+        - Ctrl+R：搜索历史记录
+        - Ctrl+A/E：行首/行尾
+        - Ctrl+K/U：删除到行尾/行首
+        - Ctrl+W：删除前一个单词
+        - Alt+Enter：切换多行模式
+        - 鼠标：选择、复制、粘贴
+
+        Args:
+            prompt: 输入提示符
+            default: 默认值
+
+        Returns:
+            用户输入的文本
+
+        Raises:
+            KeyboardInterrupt: 用户按 Ctrl+C
+            EOFError: 用户按 Ctrl+D
+        """
+        try:
+            # 使用异步 prompt 方法，与事件循环兼容
+            text = await self.session.prompt_async(
+                prompt,
+                completer=self.completer,
+                style=self.style,
+                default=default,
+                multiline=False,        # 默认单行（用户可按 Alt+Enter 切换）
+                mouse_support=True,
+                search_ignore_case=True,
+            )
+            return text.strip()
+        except (KeyboardInterrupt, EOFError):
+            # 重新抛出异常，由调用者处理
+            raise
+
     def get_multiline_input(self, prompt: str = "👤 You: ") -> str:
         """
-        获取多行输入
+        获取多行输入 (同步方法)
+
+        注意：此方法不能在已有运行的 asyncio 事件循环中使用。
+        请在异步上下文中使用 async_get_multiline_input() 方法。
 
         用于复杂查询或代码块输入。用户可在编辑时按 Ctrl+D 或 Alt+Enter
         完成输入。
@@ -129,6 +178,38 @@ class PromptInputManager:
         """
         try:
             text = self.session.prompt(
+                prompt,
+                completer=self.completer,
+                style=self.style,
+                multiline=True,         # 启用多行模式
+                mouse_support=True,
+                search_ignore_case=True,
+            )
+            return text.strip()
+        except (KeyboardInterrupt, EOFError):
+            raise
+
+    async def async_get_multiline_input(self, prompt: str = "👤 You: ") -> str:
+        """
+        异步获取多行输入
+
+        此方法与 asyncio 事件循环兼容，应在异步上下文中使用。
+
+        用于复杂查询或代码块输入。用户可在编辑时按 Ctrl+D 或 Alt+Enter
+        完成输入。
+
+        Args:
+            prompt: 输入提示符
+
+        Returns:
+            用户输入的文本
+
+        Raises:
+            KeyboardInterrupt: 用户按 Ctrl+C
+            EOFError: 用户按 Ctrl+D
+        """
+        try:
+            text = await self.session.prompt_async(
                 prompt,
                 completer=self.completer,
                 style=self.style,
