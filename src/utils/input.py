@@ -2,10 +2,72 @@
 
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
-from prompt_toolkit.completion import WordCompleter, NestedCompleter
+from prompt_toolkit.completion import Completer, Completion, CompleteEvent
 from prompt_toolkit.styles import Style
+from prompt_toolkit.document import Document
 from pathlib import Path
 import os
+
+
+class CommandCompleter(Completer):
+    """自定义命令补全器
+
+    提供对带 "/" 前缀的命令的自动补全，支持：
+    - 输入 "/" 显示所有命令
+    - 输入 "/h" 自动补全到 "/help"
+    - 忽略大小写匹配
+    """
+
+    def __init__(self, commands):
+        """初始化补全器
+
+        Args:
+            commands: 命令字典，键为命令字符串（如 "/help"）
+        """
+        self.commands = list(commands.keys())
+
+    def get_completions(self, document: Document, complete_event: CompleteEvent):
+        """获取补全建议
+
+        Args:
+            document: 当前输入文本
+            complete_event: 补全事件
+
+        Yields:
+            符合条件的补全选项
+        """
+        # 获取光标前的文本
+        text_before_cursor = document.text_before_cursor
+
+        # 如果为空，不提供补全
+        if not text_before_cursor:
+            return
+
+        # 查找最后一个命令（通常以 "/" 开头）
+        # 获取最后一个单词（从最后一个空格后开始）
+        word_start = len(text_before_cursor)
+        for i in range(len(text_before_cursor) - 1, -1, -1):
+            if text_before_cursor[i].isspace():
+                word_start = i + 1
+                break
+            elif i == 0:
+                word_start = 0
+
+        word = text_before_cursor[word_start:]
+
+        # 如果当前单词不以 "/" 开头，不提供补全
+        if not word.startswith('/'):
+            return
+
+        # 查找匹配的命令
+        word_lower = word.lower()
+        for cmd in self.commands:
+            cmd_lower = cmd.lower()
+            if cmd_lower.startswith(word_lower):
+                # 返回补全建议
+                # 补全文本是需要追加的部分
+                completion_text = cmd[len(word):]
+                yield Completion(completion_text, 0)
 
 
 class PromptInputManager:
@@ -51,10 +113,9 @@ class PromptInputManager:
             '/exit': None,
         }
 
-        # 创建 NestedCompleter 用于命令补全
-        self.completer = NestedCompleter({
-            cmd.lstrip('/'): None for cmd in self.commands.keys()
-        })
+        # 创建自定义命令补全器
+        # 提供智能的 "/" 前缀命令补全，支持大小写不敏感匹配
+        self.completer = CommandCompleter(self.commands)
 
         # 定义样式（颜色和格式）
         self.style = Style.from_dict({
