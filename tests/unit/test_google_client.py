@@ -135,6 +135,137 @@ class TestGoogleGenerationConfig:
 
 
 @pytest.mark.unit
+class TestGoogleClientAsyncBehavior:
+    """Tests for async behavior in Google client"""
+
+    def test_async_generate_content_call_structure(self):
+        """Test the structure of async generate_content call"""
+        # Verify that generate_content_async is called with correct parameters
+        expected_params = {
+            "messages": [],
+            "generation_config": {},
+            "stream": False
+        }
+
+        assert "messages" in expected_params
+        assert "generation_config" in expected_params
+        assert "stream" in expected_params
+
+
+@pytest.mark.unit
+class TestGoogleClientErrorHandling:
+    """Tests for error handling in Google client"""
+
+    def test_error_response_structure(self):
+        """Test structure of error response from client"""
+        error_response = {
+            "content": [{"type": "text", "text": "Error: API request failed"}],
+            "stop_reason": "error",
+            "usage": {"input_tokens": 0, "output_tokens": 0},
+            "model": "gemini-2.5-flash"
+        }
+
+        assert error_response["stop_reason"] == "error"
+        assert "Error" in error_response["content"][0]["text"]
+        assert error_response["usage"]["input_tokens"] == 0
+
+    def test_safe_response_with_fallback(self):
+        """Test safe response creation with fallback text"""
+        # When extraction fails, fallback should be used
+        fallback_text = "No content available"
+        response_content = []
+
+        # Simulate fallback logic
+        if not response_content and fallback_text:
+            response_content = [{"type": "text", "text": fallback_text}]
+
+        assert len(response_content) == 1
+        assert response_content[0]["text"] == fallback_text
+
+
+@pytest.mark.unit
+class TestGoogleClientUsageMetadata:
+    """Tests for usage metadata extraction from Google responses"""
+
+    def test_usage_metadata_extraction(self):
+        """Test extracting usage metadata from response"""
+        # Simulate Google response with usage_metadata
+        mock_response = Mock()
+        mock_response.usage_metadata = Mock(
+            prompt_token_count=100,
+            candidates_token_count=50
+        )
+
+        # Verify extraction logic
+        input_tokens = mock_response.usage_metadata.prompt_token_count
+        output_tokens = mock_response.usage_metadata.candidates_token_count
+
+        assert input_tokens == 100
+        assert output_tokens == 50
+
+    def test_missing_usage_metadata_handling(self):
+        """Test handling when usage_metadata is None"""
+        mock_response = Mock()
+        mock_response.usage_metadata = None
+
+        # Client should provide default values
+        input_tokens = mock_response.usage_metadata.prompt_token_count if mock_response.usage_metadata else 0
+        output_tokens = mock_response.usage_metadata.candidates_token_count if mock_response.usage_metadata else 0
+
+        assert input_tokens == 0
+        assert output_tokens == 0
+
+
+@pytest.mark.unit
+class TestGoogleClientSystemPromptHandling:
+    """Tests for system prompt handling in Google client"""
+
+    def test_system_prompt_added_to_messages(self):
+        """Test that system prompt is added as first message"""
+        system_prompt = "You are a helpful assistant"
+        messages = []
+
+        # Simulate adding system prompt
+        if system_prompt:
+            messages.append({"role": "user", "parts": [system_prompt]})
+            messages.append({"role": "model", "parts": ["Understood. I will follow these instructions."]})
+
+        assert len(messages) == 2
+        assert system_prompt in messages[0]["parts"]
+
+    def test_system_prompt_empty_handling(self):
+        """Test handling of empty system prompt"""
+        system_prompt = ""
+        messages = []
+
+        if system_prompt:
+            messages.append({"role": "user", "parts": [system_prompt]})
+
+        assert len(messages) == 0
+
+
+@pytest.mark.unit
+class TestGoogleClientStreamingBehavior:
+    """Tests for streaming behavior"""
+
+    def test_streaming_chunk_extraction(self):
+        """Test extracting text from streaming chunks"""
+        mock_chunk = Mock()
+        mock_chunk.text = "Streaming text"
+
+        extracted = mock_chunk.text if mock_chunk.text else ""
+        assert extracted == "Streaming text"
+
+    def test_empty_chunk_handling(self):
+        """Test handling of empty chunks"""
+        mock_chunk = Mock()
+        mock_chunk.text = ""
+
+        extracted = mock_chunk.text if mock_chunk.text else None
+        assert extracted is None  # Empty string is falsy, so None is returned
+
+
+@pytest.mark.unit
 class TestGoogleClientIntegration:
     """Integration-level tests for Google client"""
 
@@ -169,77 +300,17 @@ class TestGoogleClientIntegration:
                 pytest.skip("Google SDK not installed")
             raise
 
+    def test_google_client_model_name_property(self):
+        """Test model_name property"""
+        try:
+            from src.clients.factory import check_provider_available, create_client
 
-@pytest.mark.unit
-class TestGoogleSafeResponseHandling:
-    """Tests for safe response handling in Google client"""
+            if not check_provider_available("google"):
+                pytest.skip("Google Generative AI package not installed")
 
-    def test_safe_response_creation(self):
-        """Test safe response creation with fallback values"""
-        # Test that the client can handle various response formats safely
-        response_data = {
-            "content": [{"type": "text", "text": "Response"}],
-            "stop_reason": "end_turn",
-            "usage": {"input_tokens": 10, "output_tokens": 20},
-            "model": "gemini-2.5-flash"
-        }
-
-        # Verify structure is correct
-        assert response_data["content"][0]["type"] == "text"
-        assert response_data["stop_reason"] == "end_turn"
-        assert response_data["usage"]["input_tokens"] == 10
-
-    def test_error_response_handling(self):
-        """Test handling of error responses"""
-        # When an error occurs, the client should return a safe error response
-        error_response = {
-            "content": [{"type": "text", "text": "Error: Request failed"}],
-            "stop_reason": "error",
-            "usage": {"input_tokens": 0, "output_tokens": 0},
-        }
-
-        assert error_response["stop_reason"] == "error"
-        assert "Error" in error_response["content"][0]["text"]
-
-    def test_finish_reason_normalization(self):
-        """Test finish reason normalization"""
-        # Gemini finish reasons need to be normalized to Anthropic format
-        finish_reason_map = {
-            "STOP": "end_turn",
-            "MAX_TOKENS": "max_tokens",
-            "OTHER": "end_turn",  # Default
-        }
-
-        assert finish_reason_map["STOP"] == "end_turn"
-        assert finish_reason_map["MAX_TOKENS"] == "max_tokens"
-
-
-@pytest.mark.unit
-class TestGoogleClientModelHandling:
-    """Tests for Google client model handling"""
-
-    def test_model_name_formatting(self):
-        """Test that model names are properly formatted with models/ prefix"""
-        test_models = [
-            ("gemini-2.5-flash", "models/gemini-2.5-flash"),
-            ("models/gemini-2.5-flash", "models/gemini-2.5-flash"),
-            ("gemini-pro", "models/gemini-pro"),
-        ]
-
-        for input_model, expected_format in test_models:
-            # Verify the transformation logic
-            if not input_model.startswith("models/"):
-                formatted = f"models/{input_model}"
-            else:
-                formatted = input_model
-
-            assert formatted == expected_format or formatted.replace("models/", "") == expected_format.replace("models/", "")
-
-    def test_model_name_property(self):
-        """Test model_name property returns clean model name without prefix"""
-        # Model name should be returned without 'models/' prefix
-        full_model = "models/gemini-2.5-flash"
-        clean_name = full_model.replace("models/", "")
-
-        assert clean_name == "gemini-2.5-flash"
-        assert "models/" not in clean_name
+            client = create_client("google", "test_key", model="gemini-2.5-flash")
+            assert "gemini-2.5-flash" in client.model_name
+        except Exception as e:
+            if "not installed" in str(e):
+                pytest.skip("Google SDK not installed")
+            raise

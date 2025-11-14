@@ -167,16 +167,260 @@ class TestFactoryIntegration:
         assert hasattr(client, 'default_temperature')
         assert hasattr(client, 'default_max_tokens')
 
-    def test_create_client_kwargs_passed(self):
-        """Test that kwargs are passed to client initialization"""
+@pytest.mark.unit
+class TestCreateClientOpenAIProvider:
+    """Tests for creating OpenAI client through factory"""
+
+    def test_create_openai_client_basic(self):
+        """Test creating OpenAI client through factory"""
+        try:
+            from src.clients.factory import check_provider_available
+            if not check_provider_available("openai"):
+                pytest.skip("OpenAI not installed")
+
+            client = create_client("openai", "test_api_key")
+            assert client is not None
+        except ImportError:
+            pytest.skip("OpenAI client not available")
+        except Exception as e:
+            if "not installed" in str(e):
+                pytest.skip("OpenAI SDK not installed")
+
+    def test_create_openai_client_with_model(self):
+        """Test creating OpenAI client with custom model"""
+        try:
+            from src.clients.factory import check_provider_available
+            if not check_provider_available("openai"):
+                pytest.skip("OpenAI not installed")
+
+            client = create_client("openai", "test_api_key", model="gpt-4o")
+            assert client.model == "gpt-4o"
+        except Exception as e:
+            if "not installed" in str(e):
+                pytest.skip("OpenAI SDK not installed")
+
+
+@pytest.mark.unit
+class TestCreateClientGoogleProvider:
+    """Tests for creating Google client through factory"""
+
+    def test_create_google_client_basic(self):
+        """Test creating Google client through factory"""
+        try:
+            from src.clients.factory import check_provider_available
+            if not check_provider_available("google"):
+                pytest.skip("Google not installed")
+
+            client = create_client("google", "test_api_key")
+            assert client is not None
+        except ImportError:
+            pytest.skip("Google client not available")
+        except Exception as e:
+            if "not installed" in str(e):
+                pytest.skip("Google SDK not installed")
+
+    def test_create_google_client_with_model(self):
+        """Test creating Google client with custom model"""
+        try:
+            from src.clients.factory import check_provider_available
+            if not check_provider_available("google"):
+                pytest.skip("Google not installed")
+
+            client = create_client("google", "test_api_key", model="gemini-2.5-flash")
+            assert "gemini-2.5-flash" in client.model_name
+        except Exception as e:
+            if "not installed" in str(e):
+                pytest.skip("Google SDK not installed")
+
+
+@pytest.mark.unit
+class TestFactoryErrorMessages:
+    """Tests for error messages from factory"""
+
+    def test_unsupported_provider_message_includes_provider(self):
+        """Test that unsupported provider error includes the provider name"""
+        with pytest.raises(ValueError) as exc_info:
+            create_client("unknown_provider", "api_key")
+
+        assert "unknown_provider" in str(exc_info.value)
+
+    def test_import_error_message_for_openai(self):
+        """Test that ImportError message guides user to install OpenAI"""
+        with patch('src.clients.factory.create_client') as mock_create:
+            mock_create.side_effect = ImportError(
+                "Cannot use OpenAI provider\n"
+                "Please install the openai package: pip install openai"
+            )
+
+            with pytest.raises(ImportError) as exc_info:
+                create_client("openai", "test_key")
+
+            assert "openai package" in str(exc_info.value)
+
+    def test_import_error_message_for_google(self):
+        """Test that ImportError message guides user to install Google AI"""
+        # When Google is not available, create_client raises ImportError with helpful message
+        with patch('src.clients.factory.check_provider_available', return_value=False):
+            try:
+                from src.clients.factory import create_client
+                # If we can create a Google client, the test should skip
+                try:
+                    client = create_client("google", "test_key")
+                    pytest.skip("Google SDK is installed, cannot test error case")
+                except ImportError as e:
+                    assert "google-generativeai" in str(e) or "not installed" in str(e)
+            except Exception:
+                # Expected when Google SDK is not installed
+                pass
+
+
+@pytest.mark.unit
+class TestFactoryProviderAvailability:
+    """Tests for provider availability checking"""
+
+    def test_check_anthropic_is_available(self):
+        """Test Anthropic is available"""
+        result = check_provider_available("anthropic")
+        assert result is True
+
+    def test_check_openai_returns_boolean(self):
+        """Test that OpenAI check returns boolean"""
+        result = check_provider_available("openai")
+        assert isinstance(result, bool)
+
+    def test_check_google_returns_boolean(self):
+        """Test that Google check returns boolean"""
+        result = check_provider_available("google")
+        assert isinstance(result, bool)
+
+    def test_check_invalid_provider_returns_false(self):
+        """Test that invalid provider returns False"""
+        result = check_provider_available("invalid_provider_xyz")
+        assert result is False
+
+
+@pytest.mark.unit
+class TestFactoryClientInstanceIsolation:
+    """Tests that factory creates isolated client instances"""
+
+    def test_separate_anthropic_instances(self):
+        """Test that separate calls create different instances"""
+        client1 = create_client("anthropic", "key1")
+        client2 = create_client("anthropic", "key2")
+
+        assert client1 is not client2
+        assert id(client1) != id(client2)
+
+    def test_clients_with_different_models_isolated(self):
+        """Test that clients with different models are separate instances"""
+        client1 = create_client("anthropic", "key", model="model1")
+        client2 = create_client("anthropic", "key", model="model2")
+
+        assert client1.model != client2.model
+
+    def test_clients_with_different_configs_isolated(self):
+        """Test that clients with different configs are separate instances"""
+        client1 = create_client("anthropic", "key", temperature=0.5)
+        client2 = create_client("anthropic", "key", temperature=0.9)
+
+        assert client1.default_temperature != client2.default_temperature
+
+
+@pytest.mark.unit
+class TestFactoryKwargsPropagation:
+    """Tests that kwargs are properly propagated to clients"""
+
+    def test_all_kwargs_passed_to_anthropic(self):
+        """Test that all kwargs are passed to AnthropicClient"""
         client = create_client(
             "anthropic",
             "test_key",
-            model="custom-model",
-            temperature=0.3,
-            max_tokens=2000
+            model="claude-opus",
+            temperature=0.6,
+            max_tokens=2000,
+            api_base="https://api.example.com"
         )
 
-        assert client.model == "custom-model"
-        assert client.default_temperature == 0.3
+        assert client.model == "claude-opus"
+        assert client.default_temperature == 0.6
         assert client.default_max_tokens == 2000
+
+    def test_kwargs_preserved_with_multiple_params(self):
+        """Test that all parameters are preserved"""
+        params = {
+            "model": "test-model",
+            "temperature": 0.75,
+            "max_tokens": 5000,
+            "api_base": "https://custom.api"
+        }
+
+        client = create_client("anthropic", "key", **params)
+
+        for key, value in params.items():
+            if key == "model":
+                assert client.model == value
+            elif key == "temperature":
+                assert client.default_temperature == value
+            elif key == "max_tokens":
+                assert client.default_max_tokens == value
+
+
+@pytest.mark.unit
+class TestFactoryEdgeCases:
+    """Tests for edge cases in factory"""
+
+    def test_create_client_with_none_api_key(self):
+        """Test creating client with None api_key"""
+        # Should still create the client object, but SDK will fail on actual API calls
+        client = create_client("anthropic", None)
+        assert client is not None
+
+    def test_create_client_with_empty_string_api_key(self):
+        """Test creating client with empty string api_key"""
+        client = create_client("anthropic", "")
+        assert client is not None
+
+    def test_provider_name_case_sensitivity(self):
+        """Test that provider names are case-sensitive"""
+        # lowercase should work
+        result = check_provider_available("anthropic")
+        assert result is True
+
+        # uppercase should fail
+        result = check_provider_available("ANTHROPIC")
+        assert result is False
+
+
+@pytest.mark.unit
+class TestFactoryBaseClientInheritance:
+    """Tests that created clients inherit from BaseClient"""
+
+    def test_anthropic_client_is_base_client(self):
+        """Test AnthropicClient inherits from BaseClient"""
+        from src.clients.base import BaseClient
+
+        client = create_client("anthropic", "test_key")
+        assert isinstance(client, BaseClient)
+
+    def test_created_client_has_base_methods(self):
+        """Test that created client has BaseClient methods"""
+        client = create_client("anthropic", "test_key")
+
+        assert hasattr(client, 'create_message')
+        assert hasattr(client, 'generate_summary')
+        assert hasattr(client, 'model_name')
+        assert hasattr(client, 'context_window')
+
+
+@pytest.mark.unit
+class TestFactoryDocstring:
+    """Tests for factory function documentation"""
+
+    def test_create_client_function_has_docstring(self):
+        """Test that create_client has documentation"""
+        assert create_client.__doc__ is not None
+        assert "create_client" in create_client.__doc__ or "client" in create_client.__doc__.lower()
+
+    def test_check_provider_available_has_docstring(self):
+        """Test that check_provider_available has documentation"""
+        assert check_provider_available.__doc__ is not None

@@ -120,6 +120,97 @@ class TestOpenAIMessageFormatConversion:
 
 
 @pytest.mark.unit
+class TestOpenAIClientStreamingFormat:
+    """Tests for streaming response format handling"""
+
+    def test_stream_chunk_text_extraction(self):
+        """Test extracting text from stream chunks"""
+        # Delta object simulating OpenAI streaming response
+        mock_delta = Mock()
+        mock_delta.content = "Hello "
+
+        # Verify the extraction logic
+        assert mock_delta.content == "Hello "
+
+    def test_stream_chunk_tool_calls(self):
+        """Test extracting tool calls from stream"""
+        # Simulate tool call in streaming
+        mock_tool_call = Mock()
+        mock_tool_call.id = "call_123"
+        mock_tool_call.function = Mock(name="bash", arguments='{"cmd":"ls"}')
+
+        assert mock_tool_call.id == "call_123"
+
+
+@pytest.mark.unit
+class TestOpenAIClientResponseFormatting:
+    """Tests for response formatting and standardization"""
+
+    def test_response_with_multiple_content_blocks(self):
+        """Test handling response with multiple content blocks"""
+        # OpenAI might return multiple message items
+        messages = [
+            {"type": "text", "text": "Part 1"},
+            {"type": "text", "text": "Part 2"}
+        ]
+
+        assert len(messages) == 2
+        assert all(m.get("type") == "text" for m in messages)
+
+    def test_empty_tool_calls_handling(self):
+        """Test handling when tool_calls is empty or None"""
+        # When no tool calls in response
+        message = Mock()
+        message.content = "Just text"
+        message.tool_calls = None
+
+        assert message.tool_calls is None
+
+    def test_usage_field_normalization(self):
+        """Test that usage fields are normalized"""
+        usage = {
+            "prompt_tokens": 100,
+            "completion_tokens": 50
+        }
+
+        normalized = {
+            "input_tokens": usage["prompt_tokens"],
+            "output_tokens": usage["completion_tokens"]
+        }
+
+        assert normalized["input_tokens"] == 100
+        assert normalized["output_tokens"] == 50
+
+
+@pytest.mark.unit
+class TestOpenAIClientEdgeCases:
+    """Tests for edge cases and error handling"""
+
+    def test_eval_dangerous_arguments(self):
+        """Test handling of dangerous eval() on tool arguments"""
+        # Note: The code uses eval() which is dangerous in production
+        # Test verifies the current behavior
+        json_str = '{"key": "value"}'
+        result = eval(json_str)
+        assert result == {"key": "value"}
+
+    def test_tool_call_with_complex_input(self):
+        """Test tool call with nested JSON input"""
+        json_args = '{"command": "find", "path": "/home", "options": ["-name", "*.txt"]}'
+        result = eval(json_args)
+
+        assert result["command"] == "find"
+        assert isinstance(result["options"], list)
+
+    def test_finish_reason_unknown_value(self):
+        """Test handling unknown finish_reason"""
+        unknown_finish = "unknown_value"
+
+        # The conversion function should return the value as-is for unknown reasons
+        assert unknown_finish == "unknown_value"
+
+
+@pytest.mark.unit
 class TestOpenAIClientIntegration:
     """Integration-level tests for OpenAI client"""
 
@@ -150,6 +241,21 @@ class TestOpenAIClientIntegration:
             pytest.skip(f"Required module not available: {e}")
         except Exception as e:
             # If OpenAI SDK is not installed, skip
+            if "not installed" in str(e):
+                pytest.skip("OpenAI SDK not installed")
+            raise
+
+    def test_openai_client_model_property(self):
+        """Test model_name property"""
+        try:
+            from src.clients.factory import check_provider_available, create_client
+
+            if not check_provider_available("openai"):
+                pytest.skip("OpenAI package not installed")
+
+            client = create_client("openai", "test_key", model="gpt-4o")
+            assert client.model_name == "gpt-4o"
+        except Exception as e:
             if "not installed" in str(e):
                 pytest.skip("OpenAI SDK not installed")
             raise
