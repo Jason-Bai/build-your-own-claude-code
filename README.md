@@ -39,7 +39,7 @@ cp .env.example .env
 # Edit .env file and add your API key
 ```
 
-**Method 3: config.json**
+**Method 3: ~/.tiny-claude-code/settings.json**
 
 ```json
 {

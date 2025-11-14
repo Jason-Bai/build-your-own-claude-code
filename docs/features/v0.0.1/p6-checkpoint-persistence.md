@@ -16,7 +16,7 @@
 ✅ **增强的存储后端**
 
 - **原子性操作**：为 `JSONStorage` 增加了文件锁，确保并发安全。
-- **可配置性**：通过 `config.json` 动态选择存储后端。
+- **可配置性**：通过 `~/.tiny-claude-code/settings.json` 动态选择存储后端。
 
 ✅ **明确的序列化策略**
 
@@ -347,7 +347,7 @@ class ConversationPersistence:
         self.manager = PersistenceManager(storage)
 
     def _get_configured_storage(self):
-        # Read from config.json to decide which storage to use
+        # Read from ~/.tiny-claude-code/settings.json to decide which storage to use
         # Get current project name (e.g., from current working directory)
         project_name = Path.cwd().name
         # ...
@@ -376,7 +376,7 @@ class EnhancedAgent:
         self.checkpoint_manager = CheckpointManager(self.persistence)
 
     def _get_configured_storage(self, project_name: str):
-        # Read from config.json to decide which storage to use
+        # Read from ~/.tiny-claude-code/settings.json to decide which storage to use
         # ...
         return JSONStorage(project_name)
 
@@ -387,7 +387,7 @@ class EnhancedAgent:
 #### **第 3 步：多后端支持（P6 完成）**
 
 ```python
-# config.json
+# ~/.tiny-claude-code/settings.json
 {
   "persistence": {
     "storage_type": "sqlite",  // "json" or "sqlite"
@@ -548,7 +548,7 @@ def create_storage_from_config(config: dict) -> BaseStorage:
 
 2.  **配置切换测试**：
 
-    *   通过修改 `config.json` 切换 `JSONStorage` 和 `SQLiteStorage`，验证检查点功能在不同后端下都能正常工作。
+    *   通过修改 `~/.tiny-claude-code/settings.json` 切换 `JSONStorage` 和 `SQLiteStorage`，验证检查点功能在不同后端下都能正常工作。
 
 
 

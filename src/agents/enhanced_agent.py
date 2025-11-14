@@ -1,5 +1,7 @@
-"""Enhanced agent with state, context, and tool management"""
+"Enhanced agent with state, context, and tool management"
 
+import uuid
+from pathlib import Path
 from typing import Dict, List, Optional, Callable, TYPE_CHECKING
 from datetime import datetime
 
@@ -12,6 +14,14 @@ from .permission_manager import PermissionManager, PermissionMode
 from .feedback import AgentFeedback, FeedbackLevel
 from ..hooks import HookManager, HookContextBuilder, HookEvent
 from ..events import EventBus, EventType, Event, get_event_bus
+
+# P6 Imports
+from ..persistence.manager import PersistenceManager
+from ..persistence.storage import JSONStorage
+from ..checkpoint.manager import CheckpointManager
+from ..checkpoint.recovery import ExecutionRecovery
+from ..checkpoint.tracker import ExecutionTracker
+from ..checkpoint.types import Checkpoint, ExecutionResult
 
 if TYPE_CHECKING:
     from ..mcps import MCPClient
@@ -29,7 +39,8 @@ class EnhancedAgent:
         mcp_client: Optional["MCPClient"] = None,
         permission_mode: PermissionMode = PermissionMode.AUTO_APPROVE_SAFE,
         on_state_change: Optional[Callable] = None,
-        hook_manager: Optional[HookManager] = None
+        hook_manager: Optional[HookManager] = None,
+        persistence_manager: Optional[PersistenceManager] = None
     ):
         # 核心组件
         self.client = client
@@ -43,6 +54,12 @@ class EnhancedAgent:
         self.permission_manager = PermissionManager(mode=permission_mode)
         self.hook_manager = hook_manager or HookManager()
 
+        # P6: Persistence and Checkpoint System
+        self.persistence = persistence_manager or PersistenceManager(self._get_configured_storage())
+        self.checkpoint_manager = CheckpointManager(self.persistence)
+        self.execution_tracker = ExecutionTracker(self.persistence)
+        self.execution_recovery = ExecutionRecovery(self.checkpoint_manager, self.persistence)
+
         # 其他组件
         self.todo_manager = TodoManager()
         self._hook_context_builder: Optional[HookContextBuilder] = None
@@ -53,6 +70,18 @@ class EnhancedAgent:
 
         # 回调
         self.on_state_change = on_state_change
+
+    def _get_configured_storage(self):
+        project_name = Path.cwd().name
+        return JSONStorage(project_name)
+
+    def restore_state_from_checkpoint(self, checkpoint: Checkpoint):
+        """Restores the agent's internal state and context from a checkpoint."""
+        # This is a simplified restoration. A real implementation might need more logic.
+        if checkpoint.state:
+            self.state_manager.restore_state(checkpoint.state)
+        if checkpoint.context:
+            self.context_manager.restore_context(checkpoint.context)
 
     def _transition_state(self, new_state: AgentState):
         """状态转换，触发回调"""
@@ -73,160 +102,127 @@ class EnhancedAgent:
         Returns:
             执行结果统计
         """
-        # 初始化反馈收集器
-        feedback_level = FeedbackLevel.MINIMAL if verbose else FeedbackLevel.SILENT
-        feedback = AgentFeedback(level=feedback_level)
-
-        # Initialize hook context builder for this run
+        execution_id = str(uuid.uuid4())
+        feedback = AgentFeedback(level=FeedbackLevel.MINIMAL if verbose else FeedbackLevel.SILENT)
         self._hook_context_builder = HookContextBuilder()
 
-        # Trigger: on_user_input
         await self.hook_manager.trigger(
             HookEvent.ON_USER_INPUT,
-            self._hook_context_builder.build(
-                HookEvent.ON_USER_INPUT,
-                input=user_input
-            )
+            self._hook_context_builder.build(HookEvent.ON_USER_INPUT, input=user_input)
         )
+        await self.event_bus.emit(Event(EventType.AGENT_START, user_input=user_input))
 
-        # Emit: AGENT_START
-        await self.event_bus.emit(Event(
-            EventType.AGENT_START,
-            user_input=user_input
-        ))
-
-        # 1. 添加用户消息
         self.context_manager.add_user_message(user_input)
-
-        # 2. 状态：开始思考
         self._transition_state(AgentState.THINKING)
         feedback.add_thinking()
 
-        # Emit: AGENT_THINKING
-        await self.event_bus.emit(Event(
-            EventType.AGENT_THINKING,
-            turn=self.state_manager.current_turn
-        ))
-
-        # Trigger: on_agent_start
+        await self.event_bus.emit(Event(EventType.AGENT_THINKING, turn=self.state_manager.current_turn))
         await self.hook_manager.trigger(
             HookEvent.ON_AGENT_START,
             self._hook_context_builder.build(HookEvent.ON_AGENT_START)
         )
 
-        # 3. 压缩上下文（如果需要）
+        await self.execution_tracker.track_step(
+            execution_id=execution_id, step_name="Agent Start", step_index=0, status="success",
+            result={"user_input": user_input}
+        )
+
         await self.context_manager.compress_if_needed(self.client)
 
-        # 4. 主循环
         while True:
-            # 检查是否超过最大回合数
             if self.state_manager.increment_turn():
-                if verbose:
-                    print("\n⚠️ Reached maximum turn limit")
+                if verbose: print("\n⚠️ Reached maximum turn limit")
                 self._transition_state(AgentState.ERROR)
                 break
 
             try:
-                # 5. 调用 LLM
                 response = await self._call_llm()
-
-                # 6. 更新 token 统计
                 self.state_manager.add_tokens(
-                    response.usage.get("input_tokens", 0),
-                    response.usage.get("output_tokens", 0)
+                    response.usage.get("input_tokens", 0), response.usage.get("output_tokens", 0)
+                )
+                text_blocks, tool_uses = self._parse_response(response)
+                final_response = text_blocks[0] if text_blocks else ""
+
+                current_state_data = self.state_manager.get_statistics()
+                current_context_info = self.context_manager.get_context_info()
+                
+                await self.checkpoint_manager.create_checkpoint(
+                    execution_id=execution_id, step_name=f"LLM Call Turn {self.state_manager.current_turn}",
+                    step_index=self.state_manager.current_turn, state=current_state_data,
+                    context=current_context_info, variables={}
+                )
+                await self.execution_tracker.track_step(
+                    execution_id=execution_id, step_name=f"LLM Call Turn {self.state_manager.current_turn}",
+                    step_index=self.state_manager.current_turn, status="success"
                 )
 
-                # 7. 解析响应
-                text_blocks, tool_uses = self._parse_response(response)
-
-                # 8. 暂存文本（不在循环中打印）
-                final_response = ""
-                if text_blocks:
-                    final_response = text_blocks[0]
-
-                # 9. 如果没有工具调用，完成
                 if not tool_uses:
                     self.context_manager.add_assistant_message(response.content)
                     self._transition_state(AgentState.COMPLETED)
-
-                    # Emit: AGENT_END (success)
                     await self.event_bus.emit(Event(
-                        EventType.AGENT_END,
-                        success=True,
-                        final_response=final_response,
+                        EventType.AGENT_END, success=True, final_response=final_response,
                         turn=self.state_manager.current_turn
                     ))
-
-                    # Trigger: on_agent_end
                     await self.hook_manager.trigger(
                         HookEvent.ON_AGENT_END,
-                        self._hook_context_builder.build(
-                            HookEvent.ON_AGENT_END,
-                            success=True
-                        )
+                        self._hook_context_builder.build(HookEvent.ON_AGENT_END, success=True)
                     )
-
-                    # 返回结构化数据给main.py，由main.py统一输出
+                    await self.execution_tracker.track_step(
+                        execution_id=execution_id, step_name="Agent End",
+                        step_index=self.state_manager.current_turn + 1, status="success",
+                        result={"final_response": final_response}
+                    )
                     return {
-                        "final_response": final_response,
-                        "feedback": feedback.get_all(),
+                        "final_response": final_response, "feedback": feedback.get_all(),
                         "agent_state": self.state_manager.get_statistics(),
                         "context": self.context_manager.get_context_info(),
                     }
 
-                # 10. 执行工具
                 self._transition_state(AgentState.USING_TOOL)
                 tool_results = await self._execute_tools(tool_uses, verbose, feedback)
-
-                # 11. 添加消息到上下文
                 self.context_manager.add_assistant_message(response.content)
                 self.context_manager.add_tool_results(tool_results)
 
-                # 12. 继续下一轮
-                self._transition_state(AgentState.THINKING)
+                await self.execution_tracker.track_step(
+                    execution_id=execution_id, step_name=f"Tool Execution Turn {self.state_manager.current_turn}",
+                    step_index=self.state_manager.current_turn + 0.5, status="success",
+                    result={"tool_results": tool_results}
+                )
 
-                # Emit: AGENT_THINKING (for next turn)
-                await self.event_bus.emit(Event(
-                    EventType.AGENT_THINKING,
-                    turn=self.state_manager.current_turn + 1
-                ))
+                self._transition_state(AgentState.THINKING)
+                await self.event_bus.emit(Event(EventType.AGENT_THINKING, turn=self.state_manager.current_turn + 1))
 
             except Exception as e:
-                if verbose:
-                    print(f"\n❌ Error: {str(e)}")
-                self._transition_state(AgentState.ERROR)
-
-                # Emit: AGENT_ERROR
-                await self.event_bus.emit(Event(
-                    EventType.AGENT_ERROR,
-                    error=str(e),
-                    error_type=type(e).__name__
-                ))
-
-                # Trigger: on_error
-                await self.hook_manager.trigger(
-                    HookEvent.ON_ERROR,
-                    self._hook_context_builder.build(
-                        HookEvent.ON_ERROR,
-                        error=str(e),
-                        error_type=type(e).__name__
-                    )
+                if verbose: print(f"\n❌ Error: {str(e)}")
+                
+                await self.execution_tracker.track_error(
+                    execution_id=execution_id, step_name=f"Error at Turn {self.state_manager.current_turn}",
+                    step_index=self.state_manager.current_turn, error=e
                 )
-                break
+                
+                recovery_result = await self.execution_recovery.retry_from_step(
+                    execution_id=execution_id, step_index=self.state_manager.current_turn,
+                    agent_instance=self
+                )
+                
+                if recovery_result.success:
+                    feedback.add_info("Attempting recovery from last checkpoint...")
+                    continue
+                else:
+                    self._transition_state(AgentState.ERROR)
+                    await self.event_bus.emit(Event(EventType.AGENT_ERROR, error=str(e), error_type=type(e).__name__))
+                    await self.hook_manager.trigger(
+                        HookEvent.ON_ERROR,
+                        self._hook_context_builder.build(HookEvent.ON_ERROR, error=str(e), error_type=type(e).__name__)
+                    )
+                    break
 
-        # Trigger: on_shutdown
         await self.hook_manager.trigger(
             HookEvent.ON_SHUTDOWN,
-            self._hook_context_builder.build(
-                HookEvent.ON_SHUTDOWN,
-                final_state=self.state_manager.current_state.value
-            )
+            self._hook_context_builder.build(HookEvent.ON_SHUTDOWN, final_state=self.state_manager.current_state.value)
         )
-
-        # 返回统计信息（包含反馈）
         return {
-            "final_response": "",
-            "feedback": feedback.get_all(),
+            "final_response": "", "feedback": feedback.get_all(),
             "agent_state": self.state_manager.get_statistics(),
             "context": self.context_manager.get_context_info(),
         }

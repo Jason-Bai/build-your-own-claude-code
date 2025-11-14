@@ -75,7 +75,7 @@ class TestLoadConfigFile:
         manager = Mock(spec=HookManager)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_data = {
                 "hooks": {
                     "custom_handlers": []
@@ -104,7 +104,7 @@ class TestLoadConfigFile:
         manager = Mock(spec=HookManager)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_path.write_text("{ invalid json }")
 
             with pytest.raises(json.JSONDecodeError):
@@ -117,7 +117,7 @@ class TestLoadConfigFile:
         manager = Mock(spec=HookManager)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_data = {}
             config_path.write_text(json.dumps(config_data))
 
@@ -131,7 +131,7 @@ class TestLoadConfigFile:
         manager = Mock(spec=HookManager)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_data = {
                 "hooks": {
                     "custom_handlers": [
@@ -155,7 +155,7 @@ class TestLoadConfigFile:
         manager = Mock(spec=HookManager)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_data = {
                 "hooks": {
                     "custom_handlers": [
@@ -178,7 +178,7 @@ class TestLoadConfigFile:
         manager = Mock(spec=HookManager)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_data = {
                 "hooks": {
                     "custom_handlers": [
@@ -201,7 +201,7 @@ class TestLoadConfigFile:
         manager = Mock(spec=HookManager)
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_data = {
                 "hooks": {
                     "custom_handlers": [
@@ -277,7 +277,7 @@ class TestLoadHooksAsync:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             # Create a valid config file
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_data = {"hooks": {"custom_handlers": []}}
             config_path.write_text(json.dumps(config_data))
 
@@ -323,7 +323,7 @@ class TestGetStats:
         loader = HookConfigLoader()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_path.write_text("{}")
 
             loader.loaded_configs = [config_path]
@@ -337,7 +337,7 @@ class TestGetStats:
         loader = HookConfigLoader()
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             config_path.write_text("{}")
 
             loader.failed_configs = [(config_path, "Test error")]

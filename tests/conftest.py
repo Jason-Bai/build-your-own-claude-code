@@ -88,7 +88,7 @@ def test():
 @pytest.fixture
 def sample_json_config(temp_test_dir: Path) -> Path:
     """Create a sample JSON config file for testing"""
-    config_file = temp_test_dir / "config.json"
+    config_file = temp_test_dir / "~/.tiny-claude-code/settings.json"
     config_data = {
         "model": {
             "provider": "anthropic",

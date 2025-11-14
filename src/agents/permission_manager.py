@@ -132,7 +132,7 @@ class PermissionManager:
                 print("\n")
                 return False, "Permission request interrupted"
 
-    def save_preferences(self, config_path: str = "config.json"):
+    def save_preferences(self, config_path: str = "~/.tiny-claude-code/settings.json"):
         """保存用户权限偏好到配置文件"""
         try:
             config_path = Path(config_path)

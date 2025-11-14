@@ -335,7 +335,7 @@ class TestPermissionSavePreferences:
     def test_save_preferences_new_file(self):
         """Test saving preferences to new config file"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             manager = PermissionManager()
             manager.approved_tools.add("tool1")
             manager.denied_tools.add("tool2")
@@ -354,7 +354,7 @@ class TestPermissionSavePreferences:
     def test_save_preferences_existing_file(self):
         """Test saving preferences to existing config file"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
 
             # Create existing config
             existing_config = {"other_setting": "value"}
@@ -377,7 +377,7 @@ class TestPermissionSavePreferences:
     def test_save_preferences_empty_permissions(self):
         """Test saving empty permissions"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             manager = PermissionManager()
 
             result = manager.save_preferences(str(config_path))
@@ -391,7 +391,7 @@ class TestPermissionSavePreferences:
     def test_save_preferences_unicode(self):
         """Test saving preferences with unicode tool names"""
         with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "config.json"
+            config_path = Path(tmpdir) / "settings.json"
             manager = PermissionManager()
             manager.approved_tools.add("工具1")
             manager.approved_tools.add("tool_中文")

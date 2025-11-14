@@ -402,7 +402,7 @@ python -m src.main --verbose
 python -m src.main --quiet
 
 # Custom configuration file
-python -m src.main --config my-config.json
+python -m src.main --config my-~/.tiny-claude-code/settings.json
 
 # Skip permission checks (dangerous! for development only)
 python -m src.main --dangerously-skip-permissions
@@ -423,7 +423,7 @@ pip install dist/build-your-own-claude-code-0.1.0.tar.gz
 
 ### MCP Integration Development
 
-Configure MCP servers in `config.json`:
+Configure MCP servers in `~/.tiny-claude-code/settings.json`:
 
 ```json
 {
@@ -466,7 +466,7 @@ Define hooks in `~/.tiny-claude/settings.json` or `.tiny-claude/settings.json` i
 **Solution**:
 1. Set environment variable: `export ANTHROPIC_API_KEY="your-key"`
 2. Or configure in `.env` file
-3. Or configure in `config.json`
+3. Or configure in `~/.tiny-claude-code/settings.json`
 4. Ensure provider package is installed: `pip install anthropic`
 
 ### MCP Servers Cannot Load
@@ -475,7 +475,7 @@ Define hooks in `~/.tiny-claude/settings.json` or `.tiny-claude/settings.json` i
 
 **Solution**:
 1. Verify MCP package is installed: `pip install mcp`
-2. Check the MCP server command and parameters in `config.json`
+2. Check the MCP server command and parameters in `~/.tiny-claude-code/settings.json`
 3. Ensure Node.js is installed (if using npx)
 4. Run `python -m src.main --verbose` to see detailed errors
 
@@ -485,7 +485,7 @@ Define hooks in `~/.tiny-claude/settings.json` or `.tiny-claude/settings.json` i
 
 **Solution**:
 1. Use `/clear` command to clear conversation history
-2. Adjust `max_context_tokens` configuration in `config.json`
+2. Adjust `max_context_tokens` configuration in `~/.tiny-claude-code/settings.json`
 3. Use `/save` to save the current conversation, then `/clear` to start a new one
 
 ### Tool Execution Fails

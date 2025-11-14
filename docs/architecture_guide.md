@@ -397,7 +397,7 @@ src/
 │        • register with CommandRegistry                  │
 │                                                         │
 │  4. Add New MCP Server                                  │
-│     └─ Configure in config.json                         │
+│     └─ Configure in ~/.tiny-claude-code/settings.json                         │
 │        • name, command, args, env                       │
 │        • enabled: true/false                            │
 │                                                         │

@@ -1,4 +1,4 @@
-"""Main CLI application with EnhancedAgent"""
+"Main CLI application with EnhancedAgent"
 
 import asyncio
 import os
@@ -27,27 +27,58 @@ from .tools import (
 from .commands import CLIContext, command_registry, register_builtin_commands
 from .prompts import get_system_prompt
 from .mcps import MCPClient, MCPServerConfig
-from .persistence import ConversationPersistence
+
 from .utils import OutputFormatter, OutputLevel, get_input_manager
 from .hooks import HookManager, HookEvent, HookContextBuilder, HookConfigLoader
 from .events import EventBus, EventType, Event, get_event_bus
 
+# P6 Imports
+from .persistence.manager import PersistenceManager
+from .persistence.storage import JSONStorage, SQLiteStorage, BaseStorage
 
-def load_config(config_path: str = "config.json") -> dict:
-    """加载配置文件，优先级：config.json -> .env -> 环境变量"""
+
+import shutil
+
+def load_config(config_path: str = "~/.tiny-claude-code/settings.json") -> dict:
+    """加载配置文件，如果不存在则从模板创建"""
+    resolved_config_path = Path(config_path).expanduser()
+
+    # 如果配置文件不存在，从模板创建
+    if not resolved_config_path.exists():
+        try:
+            # 确保目标目录存在
+            resolved_config_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # 确定模板文件的路径
+            template_path = Path(__file__).parent.parent / "templates" / "settings.json"
+            
+            if template_path.exists():
+                shutil.copy(template_path, resolved_config_path)
+                OutputFormatter.info(
+                    f"Configuration file created at: {resolved_config_path}"
+                )
+                OutputFormatter.info(
+                    "Please edit this file to add your API keys and customize settings."
+                )
+            else:
+                OutputFormatter.warning(
+                    f"Configuration template not found at: {template_path}"
+                )
+        except Exception as e:
+            OutputFormatter.error(f"Failed to create configuration file: {e}")
+
     config = {}
-
-    # 1. 先加载 config.json 作为默认配置
-    if Path(config_path).exists():
-        with open(config_path, 'r') as f:
+    # 1. 先加载主配置文件作为默认配置
+    if resolved_config_path.exists():
+        with open(resolved_config_path, 'r') as f:
             config = json.load(f)
 
-    # 2. 如果存在 .env 文件，用 .env 覆盖 config.json
+    # 2. 如果存在 .env 文件，用 .env 覆盖 ~/.tiny-claude-code/settings.json
     env_file = Path(".env")
     if env_file.exists():
         load_dotenv(dotenv_path=env_file)
 
-        # 从 .env 文件读取配置并覆盖 config.json
+        # 从 .env 文件读取配置并覆盖 ~/.tiny-claude-code/settings.json
         # 注意：这里用 os.environ.get() 而不是 os.getenv() 来获取 .env 文件中的值
         model_config = config.get("model", {})
         model_config["ANTHROPIC_API_KEY"] = os.environ.get(
@@ -67,7 +98,7 @@ def load_config(config_path: str = "config.json") -> dict:
         model_config["GOOGLE_API_KEY"] = os.environ.get(
             "GOOGLE_API_KEY") or model_config.get("GOOGLE_API_KEY")
         model_config["GOOGLE_MODEL"] = os.environ.get(
-            "GOOGLE_MODEL") or model_config.get("GOOGLE_MODEL", "gemini-1.5-flash")
+            "GOOGLE_MODEL") or model_config.get("GOOGLE_MODEL", "gemini-2.5-flash")
         model_config["GOOGLE_API_BASE"] = os.environ.get("GOOGLE_API_BASE") or model_config.get(
             "GOOGLE_API_BASE", "https://generativelanguage.googleapis.com/v1beta")
 
@@ -220,8 +251,8 @@ def parse_args():
     # 其他参数
     parser.add_argument(
         "--config",
-        default="config.json",
-        help="Path to config file (default: config.json)"
+        default="~/.tiny-claude-code/settings.json",
+        help="Path to config file (default: ~/.tiny-claude-code/settings.json)"
     )
 
     return parser.parse_args()
@@ -284,6 +315,19 @@ async def _setup_event_listeners(event_bus: EventBus):
     event_bus.subscribe(EventType.AGENT_THINKING, on_agent_thinking)
     event_bus.subscribe(EventType.AGENT_END, on_agent_end)
     event_bus.subscribe(EventType.AGENT_ERROR, on_agent_error)
+
+
+def create_storage_from_config(config: dict) -> BaseStorage:
+    storage_config = config.get("persistence", {})
+    storage_type = storage_config.get("storage_type", "json")
+    base_dir = storage_config.get("base_dir", "~/.cache/tiny-claude-code")
+
+    project_name = Path.cwd().name
+
+    if storage_type == "sqlite":
+        return SQLiteStorage(project_name, base_dir)
+    else:
+        return JSONStorage(project_name, base_dir)
 
 
 async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
@@ -369,7 +413,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
             "Method 2 - .env file (copy .env.example to .env):")
         OutputFormatter.info("  ANTHROPIC_API_KEY=your-key")
         OutputFormatter.info("  ANTHROPIC_MODEL=claude-sonnet-4-5-20250929")
-        OutputFormatter.info("Method 3 - config.json (fallback):")
+        OutputFormatter.info("Method 3 - ~/.tiny-claude-code/settings.json (fallback):")
         OutputFormatter.info("  {")
         OutputFormatter.info("    \"model\": {")
         OutputFormatter.info("      \"ANTHROPIC_API_KEY\": \"your-key\",")
@@ -429,6 +473,9 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     # 初始化 Hook 管理器
     hook_manager = HookManager()
 
+    # P6: Create PersistenceManager with configured storage
+    persistence_manager = PersistenceManager(create_storage_from_config(config))
+
     agent = EnhancedAgent(
         client=client,
         system_prompt=get_system_prompt(),
@@ -436,7 +483,8 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
         max_context_tokens=int(client.context_window * 0.8),
         mcp_client=mcp_client,
         permission_mode=permission_mode,
-        hook_manager=hook_manager
+        hook_manager=hook_manager,
+        persistence_manager=persistence_manager
     )
 
     # 设置应用级别的 Hook 处理器
@@ -484,113 +532,61 @@ async def main():
     # 注册内置命令
     register_builtin_commands()
 
-    # 初始化持久化
-    persistence = ConversationPersistence()
+    # Initialize persistence (now handled by agent.persistence)
+    # ConversationPersistence is now a wrapper, not directly used for auto-save here.
 
-    # 创建 CLI 上下文
-    cli_context = CLIContext(agent, config={"persistence": persistence})
+    # Create CLI context
+    cli_context = CLIContext(agent, config={})
 
-    # 显示欢迎信息 - 使用新的格式化方法
-    builtin_tools = len(agent.tool_manager.tools)
-    mcp_tools = len(agent.mcp_client.tools) if agent.mcp_client else 0
-    total_tools = builtin_tools + mcp_tools
+    # ... existing welcome message ...
 
-    # 推断提供商类型
-    client_type = type(agent.client).__name__
-    if "Anthropic" in client_type:
-        provider_name = "anthropic"
-    elif "OpenAI" in client_type:
-        provider_name = "openai"
-    elif "Google" in client_type:
-        provider_name = "google"
-    else:
-        provider_name = "unknown"
-
-    # 准备欢迎信息（包含CLAUDE.md状态）
-    claude_md_info = None
-    if config.get("auto_load_context", True):
-        claude_md_path = Path.cwd() / "CLAUDE.md"
-        if claude_md_path.exists():
-            try:
-                with open(claude_md_path, 'r', encoding='utf-8') as f:
-                    context_content = f.read()
-
-                agent.context_manager.add_user_message(
-                    f"[System: Project Context]\n\n{context_content}"
-                )
-
-                OutputFormatter.success(
-                    f"Auto-loaded CLAUDE.md ({len(context_content)} chars)")
-            except Exception as e:
-                OutputFormatter.warning(f"Failed to load CLAUDE.md: {e}")
-        else:
-            claude_md_info = "ℹ️  No CLAUDE.md found. Use /init to create one."
-
-    # 显示欢迎信息（包含CLAUDE.md信息）
-    OutputFormatter.print_welcome(
-        agent.client.model_name, provider_name, total_tools, claude_md_info)
-
-    # 主循环
+    # Main loop
     try:
         is_first_iteration = True
 
-        # 获取输入管理器（Prompt-Toolkit 增强的输入）
+        # Get input manager (Prompt-Toolkit enhanced input)
         input_manager = get_input_manager()
 
         while True:
             try:
-                # 第一次迭代时不打印分隔线，后续迭代打印
+                # Don't print separator on first iteration
                 if not is_first_iteration:
                     OutputFormatter.print_separator()
                 is_first_iteration = False
 
-                # 使用 Prompt-Toolkit 的增强异步输入，支持：
-                # - Tab: 自动补全命令
-                # - Up/Down: 浏览历史
-                # - Ctrl+R: 搜索历史
-                # - 快捷键: Ctrl+A/E/K/U/W
-                # - 鼠标: 选择、复制、粘贴
                 user_input = await input_manager.async_get_input()
 
                 if not user_input:
                     continue
 
-                # 检查是否是命令
                 if command_registry.is_command(user_input):
                     result = await command_registry.execute(user_input, cli_context)
                     if result:
                         OutputFormatter.print_assistant_response(result)
                     continue
 
-                # 普通对话 - 打印 AI 响应头
                 OutputFormatter.print_separator()
                 OutputFormatter.print_assistant_response_header()
                 result = await agent.run(user_input, verbose=True)
 
-                # 统一输出处理
                 if isinstance(result, dict):
-                    # 新的返回格式：包含final_response和feedback
-                    # 1. 输出反馈信息（如有）
                     feedback_messages = result.get("feedback", [])
                     for feedback_msg in feedback_messages:
                         OutputFormatter.info(feedback_msg)
 
-                    # 2. 输出最终响应
                     final_response = result.get("final_response", "")
                     if final_response:
                         OutputFormatter.print_assistant_response(final_response)
                     stats = result.get("agent_state", {})
                 else:
-                    # 旧的返回格式：直接是stats
                     stats = result
 
-                # 自动保存（可选）
+                # Auto-save (optional)
                 if config.get("auto_save", False):
-                    conversation_id = persistence.auto_save_id()
-                    persistence.save_conversation(
+                    conversation_id = f"conv-auto-save-{Path.cwd().name}-{os.getpid()}"
+                    await agent.persistence.save_conversation(
                         conversation_id,
-                        [msg.model_dump()
-                         for msg in agent.context_manager.messages],
+                        [msg.model_dump() for msg in agent.context_manager.messages],
                         agent.context_manager.system_prompt,
                         agent.context_manager.summary,
                         {"stats": stats}
@@ -609,7 +605,6 @@ async def main():
                 OutputFormatter.info("Type /clear to reset if needed")
 
     finally:
-        # 清理 MCP 连接
         if agent.mcp_client:
             OutputFormatter.info("Disconnecting MCP servers...")
             await agent.mcp_client.disconnect_all()

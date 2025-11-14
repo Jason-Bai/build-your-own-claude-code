@@ -37,7 +37,7 @@ class TestLoadConfig:
         with patch('pathlib.Path.exists', return_value=False):
             with patch('builtins.open', mock_open(read_data=json.dumps(test_config))):
                 with patch.dict(os.environ, {}, clear=True):
-                    config = load_config("config.json")
+                    config = load_config("~/.tiny-claude-code/settings.json")
                     assert isinstance(config, dict)
 
     def test_load_config_handles_missing_file(self):
@@ -47,12 +47,20 @@ class TestLoadConfig:
                 config = load_config("missing.json")
                 assert isinstance(config, dict)
 
+    def test_load_config_handles_missing_unified_file(self):
+        """Test load_config handles missing unified config file gracefully"""
+        with patch('pathlib.Path.exists', return_value=False):
+            with patch.dict(os.environ, {}, clear=True):
+                config = load_config("~/.tiny-claude-code/settings.json")
+                assert isinstance(config, dict)
+                assert config == {}
+
     def test_load_config_with_env_vars(self):
         """Test load_config merges environment variables"""
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "env-key"}, clear=True):
                 with patch('src.main.load_dotenv'):
-                    config = load_config("config.json")
+                    config = load_config("~/.tiny-claude-code/settings.json")
                     assert isinstance(config, dict)
 
     def test_load_config_env_file_exists(self):
@@ -62,7 +70,7 @@ class TestLoadConfig:
             with patch('builtins.open', mock_open(read_data=json.dumps(test_config))):
                 with patch('src.main.load_dotenv'):
                     with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "env-key"}):
-                        config = load_config("config.json")
+                        config = load_config("~/.tiny-claude-code/settings.json")
                         assert isinstance(config, dict)
 
 
@@ -125,7 +133,7 @@ class TestParseArgs:
         """Test parse_args with default arguments"""
         with patch('sys.argv', ['script']):
             args = parse_args()
-            assert args.config == "config.json"
+            assert args.config == "~/.tiny-claude-code/settings.json"
             assert args.verbose is False
             assert args.quiet is False
 
@@ -444,7 +452,7 @@ class TestConfigLoading:
         """Test config provides sensible defaults for model"""
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {}, clear=True):
-                config = load_config("config.json")
+                config = load_config("~/.tiny-claude-code/settings.json")
                 # Should be a dict, even if empty
                 assert isinstance(config, dict)
 
@@ -454,7 +462,7 @@ class TestConfigLoading:
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {"TEMPERATURE": "0.8"}):
                 with patch('src.main.load_dotenv'):
-                    config = load_config("config.json")
+                    config = load_config("~/.tiny-claude-code/settings.json")
                     assert isinstance(config, dict)
 
     def test_config_max_tokens_conversion(self):
@@ -462,7 +470,7 @@ class TestConfigLoading:
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {"MAX_TOKENS": "2000"}):
                 with patch('src.main.load_dotenv'):
-                    config = load_config("config.json")
+                    config = load_config("~/.tiny-claude-code/settings.json")
                     assert isinstance(config, dict)
 
 
@@ -479,11 +487,11 @@ class TestMainFunctionality:
             assert hasattr(args, 'quiet')
 
     def test_load_config_priority(self):
-        """Test load_config respects priority (env > .env > config.json)"""
+        """Test load_config respects priority (env > .env > ~/.tiny-claude-code/settings.json)"""
         test_config = {"model": {"ANTHROPIC_API_KEY": "config-key"}}
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {}, clear=True):
-                config = load_config("config.json")
+                config = load_config("~/.tiny-claude-code/settings.json")
                 assert isinstance(config, dict)
 
     def test_resolve_env_vars_escaping(self):

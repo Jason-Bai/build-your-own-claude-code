@@ -67,7 +67,7 @@ python -m src.main --quiet            # Minimal output
 
 ## Configuration
 
-### config.json
+### ~/.tiny-claude-code/settings.json
 
 ```json
 {
@@ -181,7 +181,7 @@ class MyClient(BaseClient):
 
 | Issue            | Solution                                       |
 | ---------------- | ---------------------------------------------- |
-| No API provider  | Set `ANTHROPIC_API_KEY` env var or config.json |
+| No API provider  | Set `ANTHROPIC_API_KEY` env var or ~/.tiny-claude-code/settings.json |
 | MCP not loading  | Verify: `pip install mcp`, check config        |
 | Context exceeded | Use `/clear` to reset conversation             |
 | Tool fails       | Check permissions, verify parameters           |

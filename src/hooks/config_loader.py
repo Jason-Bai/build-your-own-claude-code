@@ -88,27 +88,17 @@ class HookConfigLoader:
         return stats
 
     def _collect_config_files(self) -> List[Path]:
-        """Collect all hook config files in priority order
+        """Collect all hook config files from the unified settings.json.
 
         Returns:
             List of Path objects in loading order (highest to lowest priority)
         """
         config_files: List[Path] = []
 
-        # 1. User global config: ~/.tiny-claude/settings.json
-        user_global = Path.home() / ".tiny-claude" / "settings.json"
-        if user_global.exists():
-            config_files.append(user_global)
-
-        # 2. Project config: .tiny-claude/settings.json
-        project_config = Path.cwd() / ".tiny-claude" / "settings.json"
-        if project_config.exists():
-            config_files.append(project_config)
-
-        # 3. Local config (not committed): .tiny-claude/settings.local.json
-        local_config = Path.cwd() / ".tiny-claude" / "settings.local.json"
-        if local_config.exists():
-            config_files.append(local_config)
+        # Unified config: ~/.tiny-claude-code/settings.json
+        unified_config = Path.home() / ".tiny-claude-code" / "settings.json"
+        if unified_config.exists():
+            config_files.append(unified_config)
 
         return config_files
 

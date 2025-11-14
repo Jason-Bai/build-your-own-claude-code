@@ -50,16 +50,16 @@ ModuleNotFoundError: No module named 'anthropic'
 
 **Symptoms**:
 ```
-Error loading config file: config.json not found
+Error loading config file: ~/.tiny-claude-code/settings.json not found
 ```
 
 **Cause**: Configuration file path is incorrect or file format is invalid
 
 **Solution**:
-1. Ensure `config.json` is in the project root directory
+1. Ensure `~/.tiny-claude-code/settings.json` is in the project root directory
 2. Validate JSON format:
    ```bash
-   python -m json.tool config.json
+   python -m json.tool ~/.tiny-claude-code/settings.json
    ```
 
 3. Use a valid configuration template:
@@ -111,7 +111,7 @@ ANTHROPIC_API_KEY=your-key
 ANTHROPIC_MODEL=claude-sonnet-4-5-20250929
 ```
 
-**Method 3: config.json**
+**Method 3: ~/.tiny-claude-code/settings.json**
 ```json
 {
   "model": {
@@ -148,7 +148,7 @@ TimeoutError: Request to API timed out after 30 seconds
 
 3. Retry the request (the system will automatically retry)
 
-4. Increase timeout duration in `config.json` (if supported):
+4. Increase timeout duration in `~/.tiny-claude-code/settings.json` (if supported):
    ```json
    {
      "timeout_seconds": 60
@@ -242,7 +242,7 @@ APIError: 401 Unauthorized - Invalid API key
 **Solution**:
 1. Check if your terminal supports colors (most modern terminals do)
 
-2. Disable colors in `config.json` (if needed):
+2. Disable colors in `~/.tiny-claude-code/settings.json` (if needed):
    ```json
    {
      "ui": {
@@ -305,7 +305,7 @@ TimeoutError: Tool execution timed out after 30 seconds
 
 2. Try restarting the application
 
-3. For long-running commands, increase timeout duration (configure in `config.json` if supported)
+3. For long-running commands, increase timeout duration (configure in `~/.tiny-claude-code/settings.json` if supported)
 
 4. Try simplifying the command or breaking it into multiple steps
 
@@ -384,7 +384,7 @@ RuntimeError: Failed to start MCP server: filesystem
    pip install mcp
    ```
 
-2. Verify MCP configuration in `config.json`:
+2. Verify MCP configuration in `~/.tiny-claude-code/settings.json`:
    ```json
    {
      "mcp_servers": [
@@ -603,7 +603,7 @@ FileExistsError: CLAUDE.md already exists
    /todos
    ```
 
-4. Disable unnecessary MCP servers (set `"enabled": false` in `config.json`)
+4. Disable unnecessary MCP servers (set `"enabled": false` in `~/.tiny-claude-code/settings.json`)
 
 5. Reduce history line count (adjust in configuration if supported)
 

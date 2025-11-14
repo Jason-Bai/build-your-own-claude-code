@@ -4,7 +4,7 @@ This project is a command-line AI coding assistant built with Python. It's desig
 
 The core of the application is the `EnhancedAgent`, which manages the agent's state, context, and tools. It uses a state machine to handle the lifecycle of a request, from user input to tool execution and final response. The agent is equipped with a set of tools for file operations (read, write, edit), command execution (bash), and file search (glob, grep).
 
-The application supports multiple LLM providers, including Anthropic, OpenAI, and Google. It's configured through a `config.json` file, `.env` file, or environment variables.
+The application supports multiple LLM providers, including Anthropic, OpenAI, and Google. It's configured through a `~/.tiny-claude-code/settings.json` file, `.env` file, or environment variables.
 
 ## Building and Running
 
@@ -24,8 +24,8 @@ Choose one of the following methods to configure your API key:
     ```
 *   **.env File:**
     Copy `.env.example` to `.env` and add your API key.
-*   **config.json:**
-    Add your API key to the `model` section of the `config.json` file.
+*   **~/.tiny-claude-code/settings.json:**
+    Add your API key to the `model` section of the `~/.tiny-claude-code/settings.json` file.
 
 ### 3. Run the Application
 

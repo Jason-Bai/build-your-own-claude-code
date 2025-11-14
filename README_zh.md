@@ -39,7 +39,7 @@ cp .env.example .env
 # 编辑 .env 文件，添加你的 API key
 ```
 
-**方法 3：config.json**
+**方法 3：~/.tiny-claude-code/settings.json**
 
 ```json
 {
