@@ -65,89 +65,33 @@ python -m src.main
 
 ## 🧪 测试
 
-本项目包含全面的测试套件，确保代码质量和可维护性。
-
-### 测试统计
-
-- **测试总数**: 359 个通过测试 ✅
-- **代码覆盖率**: 34%（从 5% 提升）
-- **测试文件**: 8 个单元测试模块
-- **测试基础设施**: 30+ 个可重用 fixtures
-- **执行时间**: ~3.3 秒
-
-### 运行测试
+本项目包含全面的测试套件，共 **359 个通过测试**，**34% 代码覆盖率**。
 
 ```bash
 # 运行所有测试
 pytest tests/unit/ -v
 
-# 运行特定测试文件
-pytest tests/unit/test_hook_manager.py -v
-
-# 运行测试并生成覆盖率报告
+# 查看覆盖率报告
 pytest tests/unit/ --cov=src --cov-report=html
-
-# 快速验证
-pytest tests/unit/ -v --tb=short | tail -20
 ```
 
-### 模块覆盖率
+### 测试覆盖
 
-**高覆盖率 (>80%)**
-- `hooks/manager.py`: 95% - Hook 注册和触发
-- `hooks/types.py`: 95% - Hook 事件类型和上下文
-- `tools/executor.py`: 95% - 工具执行和重试逻辑
-- `agents/tool_manager.py`: 91% - 工具管理
-- `tools/file_ops.py`: 88% - 文件操作（Read/Write/Edit）
-- `tools/base.py`: 87% - 基础工具抽象
-- `tools/todo.py`: 83% - 任务管理
+- **Agent 系统**: 193 个测试（状态管理、上下文、工具、权限）
+- **LLM 客户端**: 42 个测试（Anthropic、OpenAI、Google）
+- **工具系统**: 47 个测试（文件操作、bash、搜索、todo）
+- **Hook 系统**: 63 个测试（事件类型、管理器、构建器）
 
-**良好覆盖率 (60-80%)**
-- `tools/search.py`: 79% - 文件搜索（Glob/Grep）
-- `clients/anthropic.py`: 76% - Anthropic Claude 客户端
-- `tools/bash.py`: 76% - Shell 命令执行
-- `agents/permission_manager.py`: 60% - 权限控制
+### 高覆盖率模块 (>80%)
 
-### 测试组织
+- `hooks/manager.py`: 95% | `hooks/types.py`: 95% | `tools/executor.py`: 95%
+- `agents/tool_manager.py`: 91% | `tools/file_ops.py`: 88% | `tools/base.py`: 87%
 
-测试按模块组织为清晰的结构：
+快速入门和详细文档：
 
-1. **Agent 系统测试** (193 个测试)
-   - 状态管理和 FSM 转换
-   - 上下文管理和 token 估算
-   - 工具注册和执行
-   - 权限控制系统
+👉 **[docs/testing_quickstart.md](./docs/testing_quickstart.md)** - 5 分钟快速上手
 
-2. **LLM 客户端测试** (42 个测试)
-   - 客户端初始化和配置
-   - 消息创建和流式传输
-   - 多提供商支持
-
-3. **工具系统测试** (47 个测试)
-   - 文件操作（Read, Write, Edit）
-   - Shell 执行（Bash）
-   - 搜索工具（Glob, Grep）
-   - 任务管理（Todo）
-
-4. **Hook 系统测试** (63 个测试)
-   - Hook 事件类型和上下文
-   - Hook 管理器和注册
-   - 基于优先级的执行
-   - 错误处理和恢复
-
-### 贡献测试
-
-添加新功能时：
-
-1. 先写测试（TDD 方法）
-2. 新代码目标覆盖率 >80%
-3. 包含边界情况和错误场景
-4. 使用描述性的测试名称和文档字符串
-5. 遵循 `tests/unit/` 中的现有测试模式
-
-详细的测试文档：
-
-👉 **[TESTING_SUMMARY.md](./TESTING_SUMMARY.md)**
+👉 **[docs/testing_summary.md](./docs/testing_summary.md)** - 完整测试概览
 
 ## 🛠️ 开发指南
 

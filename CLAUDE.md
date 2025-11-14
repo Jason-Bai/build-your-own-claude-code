@@ -11,13 +11,15 @@ A production-ready AI coding assistant implementation inspired by Anthropic's Cl
 ## Architecture at a Glance
 
 ### Core Components
+
 - **Agent System** (`src/agents/`) - FSM-based state machine (IDLE → THINKING → USING_TOOL → COMPLETED)
 - **LLM Clients** (`src/clients/`) - Multi-provider support (Anthropic, OpenAI, Google)
 - **Tool System** (`src/tools/`) - 7 built-in tools + MCP integration
 - **Hook System** (`src/hooks/`) - Event-driven extensibility
 - **CLI Enhancement** - Prompt-Toolkit (input) + Rich (output)
 
-### Key Features
+### Key Featuresg
+
 - **Intelligent Input**: Command autocomplete, history, keyboard shortcuts
 - **Beautiful Output**: Markdown rendering, syntax highlighting, colored styles
 - **Permission System**: Three-tier access control (SAFE/NORMAL/DANGEROUS)
@@ -29,17 +31,20 @@ A production-ready AI coding assistant implementation inspired by Anthropic's Cl
 ## Quick Start
 
 ### Installation
+
 ```bash
 pip install -r requirements.txt
 ```
 
 ### Configure API Key
+
 ```bash
 export ANTHROPIC_API_KEY="your-key"
 export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
 ```
 
 ### Run
+
 ```bash
 python -m src.main                    # Basic run
 python -m src.main --verbose          # Show tool details
@@ -63,6 +68,7 @@ python -m src.main --quiet            # Minimal output
 ## Configuration
 
 ### config.json
+
 ```json
 {
   "model": {
@@ -81,7 +87,9 @@ python -m src.main --quiet            # Minimal output
 ```
 
 ### Hooks
+
 Define in `~/.tiny-claude/settings.json`:
+
 ```json
 {
   "hooks": [
@@ -100,17 +108,21 @@ Define in `~/.tiny-claude/settings.json`:
 ## Documentation and Code Standards
 
 ### Language Requirements
+
 ✅ **Must be in English:**
+
 - README.md - Main entry point
 - All docs/ - Developer documentation
 - Code comments & docstrings - All Python code
 - Commit messages - For searchability
 
 📝 **Exceptions:**
+
 - CLAUDE.md can remain bilingual (internal context)
 - Internal config files can have Chinese comments
 
 ### Benefits
+
 - Internationalization support for global developers
 - Better GitHub visibility and SEO
 - Unified codebase maintenance
@@ -121,12 +133,14 @@ Define in `~/.tiny-claude/settings.json`:
 ## Development
 
 ### Key Files
+
 - `src/main.py` - Application entry point
 - `src/agents/enhanced_agent.py` - Agent core
 - `docs/architecture_guide.md` - Detailed architecture
 - `docs/development_guide.md` - Contribution guidelines
 
 ### Technology Stack
+
 - **Python 3.10+** - Language
 - **Anthropic Claude API** - Primary LLM (fully verified)
 - **Pydantic 2.0+** - Data validation
@@ -137,6 +151,7 @@ Define in `~/.tiny-claude/settings.json`:
 ### Common Tasks
 
 **Add a Tool:**
+
 ```python
 from src.tools.base import BaseTool, ToolResult
 
@@ -150,6 +165,7 @@ class MyTool(BaseTool):
 ```
 
 **Add a LLM Provider:**
+
 ```python
 from src.clients.base import BaseClient
 
@@ -163,12 +179,12 @@ class MyClient(BaseClient):
 
 ## Quick Troubleshooting
 
-| Issue | Solution |
-|-------|----------|
-| No API provider | Set `ANTHROPIC_API_KEY` env var or config.json |
-| MCP not loading | Verify: `pip install mcp`, check config |
-| Context exceeded | Use `/clear` to reset conversation |
-| Tool fails | Check permissions, verify parameters |
+| Issue            | Solution                                       |
+| ---------------- | ---------------------------------------------- |
+| No API provider  | Set `ANTHROPIC_API_KEY` env var or config.json |
+| MCP not loading  | Verify: `pip install mcp`, check config        |
+| Context exceeded | Use `/clear` to reset conversation             |
+| Tool fails       | Check permissions, verify parameters           |
 
 For detailed issues: [docs/troubleshooting_guide.md](./docs/troubleshooting_guide.md)
 
