@@ -63,6 +63,92 @@ For detailed architecture design, data flow, Agent state machine and more:
 
 👉 **[docs/architecture_guide.md](./docs/architecture_guide.md)**
 
+## 🧪 Testing
+
+This project includes a comprehensive test suite to ensure code quality and maintainability.
+
+### Test Statistics
+
+- **Total Tests**: 359 passing tests ✅
+- **Code Coverage**: 34% (up from 5%)
+- **Test Files**: 8 unit test modules
+- **Test Infrastructure**: 30+ reusable fixtures
+- **Execution Time**: ~3.3 seconds
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest tests/unit/ -v
+
+# Run specific test file
+pytest tests/unit/test_hook_manager.py -v
+
+# Run with coverage report
+pytest tests/unit/ --cov=src --cov-report=html
+
+# Quick verification
+pytest tests/unit/ -v --tb=short | tail -20
+```
+
+### Test Coverage by Module
+
+**High Coverage (>80%)**
+- `hooks/manager.py`: 95% - Hook registration and triggering
+- `hooks/types.py`: 95% - Hook event types and context
+- `tools/executor.py`: 95% - Tool execution with retry logic
+- `agents/tool_manager.py`: 91% - Tool management
+- `tools/file_ops.py`: 88% - File operations (Read/Write/Edit)
+- `tools/base.py`: 87% - Base tool abstractions
+- `tools/todo.py`: 83% - Task management
+
+**Good Coverage (60-80%)**
+- `tools/search.py`: 79% - File search (Glob/Grep)
+- `clients/anthropic.py`: 76% - Anthropic Claude client
+- `tools/bash.py`: 76% - Shell command execution
+- `agents/permission_manager.py`: 60% - Permission control
+
+### Test Organization
+
+Tests are organized into focused modules:
+
+1. **Agent System Tests** (193 tests)
+   - State management and FSM transitions
+   - Context management and token estimation
+   - Tool registration and execution
+   - Permission control system
+
+2. **LLM Client Tests** (42 tests)
+   - Client initialization and configuration
+   - Message creation and streaming
+   - Multi-provider support
+
+3. **Tool System Tests** (47 tests)
+   - File operations (Read, Write, Edit)
+   - Shell execution (Bash)
+   - Search tools (Glob, Grep)
+   - Task management (Todo)
+
+4. **Hook System Tests** (63 tests)
+   - Hook event types and context
+   - Hook manager and registration
+   - Priority-based execution
+   - Error handling and recovery
+
+### Contributing Tests
+
+When adding new features:
+
+1. Write tests first (TDD approach)
+2. Aim for >80% coverage for new code
+3. Include edge cases and error scenarios
+4. Use descriptive test names and docstrings
+5. Follow existing test patterns in `tests/unit/`
+
+For detailed testing documentation:
+
+👉 **[TESTING_SUMMARY.md](./TESTING_SUMMARY.md)**
+
 ## 🛠️ Development Guide
 
 Want to contribute to the project? Learn how to add new tools, new LLM providers, new commands, and more:
