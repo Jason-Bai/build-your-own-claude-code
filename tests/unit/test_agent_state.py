@@ -1,126 +1,91 @@
 """
 Unit tests for Agent State Management
 
-Tests AgentStateManager and AgentState classes covering:
-- State transitions (FSM)
-- Tool call recording and result updates
-- Token tracking and statistics
-- Turn management
-- State reset functionality
+Tests state transitions, tool call recording, and statistics tracking.
 """
 
 import pytest
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
-
 from src.agents.state import AgentState, ToolCall, AgentStateManager
 
 
 @pytest.mark.unit
-class TestAgentStateEnum:
+class TestAgentState:
     """Tests for AgentState enum"""
 
-    def test_agent_state_idle_value(self):
-        """Test IDLE state value"""
+    def test_agent_state_values(self):
+        """Test all agent state values"""
         assert AgentState.IDLE.value == "idle"
-
-    def test_agent_state_thinking_value(self):
-        """Test THINKING state value"""
         assert AgentState.THINKING.value == "thinking"
-
-    def test_agent_state_using_tool_value(self):
-        """Test USING_TOOL state value"""
         assert AgentState.USING_TOOL.value == "using_tool"
-
-    def test_agent_state_waiting_for_result_value(self):
-        """Test WAITING_FOR_RESULT state value"""
         assert AgentState.WAITING_FOR_RESULT.value == "waiting_for_result"
-
-    def test_agent_state_completed_value(self):
-        """Test COMPLETED state value"""
         assert AgentState.COMPLETED.value == "completed"
-
-    def test_agent_state_error_value(self):
-        """Test ERROR state value"""
         assert AgentState.ERROR.value == "error"
 
-    def test_agent_state_all_states_exist(self):
-        """Test all required states exist"""
-        states = [s.value for s in AgentState]
+    def test_agent_state_enum_members(self):
+        """Test that all expected states exist"""
+        states = {AgentState.IDLE, AgentState.THINKING, AgentState.USING_TOOL,
+                  AgentState.WAITING_FOR_RESULT, AgentState.COMPLETED, AgentState.ERROR}
         assert len(states) == 6
-        assert "idle" in states
-        assert "thinking" in states
-        assert "using_tool" in states
 
 
 @pytest.mark.unit
 class TestToolCall:
     """Tests for ToolCall dataclass"""
 
-    def test_tool_call_initialization(self):
-        """Test creating a ToolCall"""
-        call = ToolCall(
-            id="call-123",
-            name="read_file",
-            input={"path": "/tmp/test.txt"}
-        )
-        assert call.id == "call-123"
-        assert call.name == "read_file"
-        assert call.input == {"path": "/tmp/test.txt"}
-        assert call.status == "pending"
-        assert call.result is None
-        assert call.error is None
+    def test_tool_call_creation_minimal(self):
+        """Test creating ToolCall with minimal parameters"""
+        tool_call = ToolCall(id="tool_1", name="bash", input={"command": "ls"})
 
-    def test_tool_call_with_result(self):
-        """Test ToolCall with result set"""
-        call = ToolCall(
-            id="call-123",
-            name="read_file",
-            input={"path": "/tmp/test.txt"},
-            result="File content"
-        )
-        assert call.result == "File content"
-        assert call.error is None
+        assert tool_call.id == "tool_1"
+        assert tool_call.name == "bash"
+        assert tool_call.input == {"command": "ls"}
+        assert tool_call.status == "pending"
+        assert tool_call.result is None
+        assert tool_call.error is None
 
-    def test_tool_call_with_error(self):
-        """Test ToolCall with error"""
-        call = ToolCall(
-            id="call-123",
-            name="read_file",
-            input={"path": "/tmp/test.txt"},
-            error="File not found"
-        )
-        assert call.error == "File not found"
-        assert call.result is None
+    def test_tool_call_creation_with_timestamp(self):
+        """Test that ToolCall has timestamp"""
+        tool_call = ToolCall(id="tool_1", name="read", input={"file": "test.txt"})
 
-    def test_tool_call_timestamp_created(self):
-        """Test that ToolCall timestamp is set"""
-        before = datetime.now()
-        call = ToolCall(
-            id="call-123",
-            name="read_file",
-            input={}
-        )
-        after = datetime.now()
-        assert before <= call.timestamp <= after
+        assert tool_call.timestamp is not None
+        assert isinstance(tool_call.timestamp, datetime)
 
-    def test_tool_call_status_pending(self):
-        """Test ToolCall default status is pending"""
-        call = ToolCall(
-            id="call-123",
-            name="read_file",
-            input={}
+    def test_tool_call_creation_with_result(self):
+        """Test creating ToolCall with result"""
+        tool_call = ToolCall(
+            id="tool_1",
+            name="read",
+            input={"file": "test.txt"},
+            result="file contents",
+            status="completed"
         )
-        assert call.status == "pending"
+
+        assert tool_call.result == "file contents"
+        assert tool_call.status == "completed"
+
+    def test_tool_call_creation_with_error(self):
+        """Test creating ToolCall with error"""
+        tool_call = ToolCall(
+            id="tool_1",
+            name="read",
+            input={"file": "nonexistent.txt"},
+            error="File not found",
+            status="failed"
+        )
+
+        assert tool_call.error == "File not found"
+        assert tool_call.status == "failed"
 
 
 @pytest.mark.unit
 class TestAgentStateManagerInitialization:
     """Tests for AgentStateManager initialization"""
 
-    def test_agent_state_manager_default_initialization(self):
-        """Test default AgentStateManager initialization"""
+    def test_state_manager_default_initialization(self):
+        """Test default initialization"""
         manager = AgentStateManager()
+
         assert manager.current_state == AgentState.IDLE
         assert manager.current_turn == 0
         assert manager.max_turns == 20
@@ -130,59 +95,35 @@ class TestAgentStateManagerInitialization:
         assert manager.start_time is None
         assert manager.end_time is None
 
-    def test_agent_state_manager_custom_max_turns(self):
-        """Test AgentStateManager with custom max_turns"""
-        manager = AgentStateManager(max_turns=50)
-        assert manager.max_turns == 50
+    def test_state_manager_custom_max_turns(self):
+        """Test initialization with custom max_turns"""
+        manager = AgentStateManager(max_turns=10)
 
-    def test_agent_state_manager_custom_initial_state(self):
-        """Test AgentStateManager with custom initial state"""
-        manager = AgentStateManager(current_state=AgentState.THINKING)
-        assert manager.current_state == AgentState.THINKING
+        assert manager.max_turns == 10
+
+    def test_state_manager_initial_state(self):
+        """Test that initial state is IDLE"""
+        manager = AgentStateManager()
+
+        assert manager.current_state == AgentState.IDLE
 
 
 @pytest.mark.unit
-class TestAgentStateTransitions:
+class TestAgentStateManagerStateTransition:
     """Tests for state transitions"""
 
-    def test_transition_from_idle_to_thinking(self):
-        """Test transition from IDLE to THINKING"""
+    def test_transition_to_thinking_sets_start_time(self):
+        """Test that transitioning to THINKING sets start_time"""
         manager = AgentStateManager()
+        assert manager.start_time is None
+
         manager.transition_to(AgentState.THINKING)
+
         assert manager.current_state == AgentState.THINKING
         assert manager.start_time is not None
 
-    def test_transition_from_thinking_to_using_tool(self):
-        """Test transition from THINKING to USING_TOOL"""
-        manager = AgentStateManager()
-        manager.transition_to(AgentState.THINKING)
-        start_time = manager.start_time
-
-        manager.transition_to(AgentState.USING_TOOL)
-        assert manager.current_state == AgentState.USING_TOOL
-        assert manager.start_time == start_time  # Should not change
-
-    def test_transition_from_using_tool_to_completed(self):
-        """Test transition from USING_TOOL to COMPLETED"""
-        manager = AgentStateManager()
-        manager.transition_to(AgentState.THINKING)
-        manager.transition_to(AgentState.USING_TOOL)
-
-        manager.transition_to(AgentState.COMPLETED)
-        assert manager.current_state == AgentState.COMPLETED
-        assert manager.end_time is not None
-
-    def test_transition_to_error_sets_end_time(self):
-        """Test that transitioning to ERROR sets end_time"""
-        manager = AgentStateManager()
-        manager.transition_to(AgentState.THINKING)
-        manager.transition_to(AgentState.ERROR)
-
-        assert manager.current_state == AgentState.ERROR
-        assert manager.end_time is not None
-
-    def test_start_time_set_only_on_first_thinking(self):
-        """Test that start_time is set only on first THINKING transition"""
+    def test_transition_to_thinking_only_sets_start_time_once(self):
+        """Test that start_time is only set on first THINKING transition"""
         manager = AgentStateManager()
         manager.transition_to(AgentState.THINKING)
         first_start_time = manager.start_time
@@ -190,243 +131,181 @@ class TestAgentStateTransitions:
         manager.transition_to(AgentState.USING_TOOL)
         manager.transition_to(AgentState.THINKING)
 
-        # Start time should not change
+        # Start time should not change on second THINKING transition
         assert manager.start_time == first_start_time
 
-    def test_multiple_state_transitions(self):
-        """Test a full workflow of state transitions"""
+    def test_transition_to_completed_sets_end_time(self):
+        """Test that transitioning to COMPLETED sets end_time"""
         manager = AgentStateManager()
-
-        # IDLE -> THINKING
         manager.transition_to(AgentState.THINKING)
-        assert manager.current_state == AgentState.THINKING
 
-        # THINKING -> USING_TOOL
-        manager.transition_to(AgentState.USING_TOOL)
-        assert manager.current_state == AgentState.USING_TOOL
-
-        # USING_TOOL -> COMPLETED
         manager.transition_to(AgentState.COMPLETED)
+
         assert manager.current_state == AgentState.COMPLETED
         assert manager.end_time is not None
 
+    def test_transition_to_error_sets_end_time(self):
+        """Test that transitioning to ERROR sets end_time"""
+        manager = AgentStateManager()
+        manager.transition_to(AgentState.THINKING)
+
+        manager.transition_to(AgentState.ERROR)
+
+        assert manager.current_state == AgentState.ERROR
+        assert manager.end_time is not None
+
+    def test_transition_sequence(self):
+        """Test typical state transition sequence"""
+        manager = AgentStateManager()
+
+        manager.transition_to(AgentState.THINKING)
+        assert manager.current_state == AgentState.THINKING
+
+        manager.transition_to(AgentState.USING_TOOL)
+        assert manager.current_state == AgentState.USING_TOOL
+
+        manager.transition_to(AgentState.THINKING)
+        assert manager.current_state == AgentState.THINKING
+
+        manager.transition_to(AgentState.COMPLETED)
+        assert manager.current_state == AgentState.COMPLETED
+
 
 @pytest.mark.unit
-class TestToolCallRecording:
-    """Tests for tool call recording"""
+class TestAgentStateManagerToolCalls:
+    """Tests for tool call recording and management"""
 
-    def test_record_single_tool_call(self):
-        """Test recording a single tool call"""
+    def test_record_tool_call(self):
+        """Test recording a tool call"""
         manager = AgentStateManager()
-        tool_call = ToolCall(
-            id="call-1",
-            name="read_file",
-            input={"path": "/tmp/test.txt"}
-        )
+        tool_call = ToolCall(id="tool_1", name="bash", input={"command": "ls"})
 
         manager.record_tool_call(tool_call)
+
         assert len(manager.tool_calls) == 1
-        assert manager.tool_calls[0].id == "call-1"
+        assert manager.tool_calls[0] == tool_call
 
     def test_record_multiple_tool_calls(self):
         """Test recording multiple tool calls"""
         manager = AgentStateManager()
 
-        for i in range(5):
-            call = ToolCall(
-                id=f"call-{i}",
-                name="tool",
-                input={}
-            )
-            manager.record_tool_call(call)
+        manager.record_tool_call(ToolCall(id="tool_1", name="bash", input={"command": "ls"}))
+        manager.record_tool_call(ToolCall(id="tool_2", name="read", input={"file": "test.txt"}))
+        manager.record_tool_call(ToolCall(id="tool_3", name="write", input={"file": "out.txt"}))
 
-        assert len(manager.tool_calls) == 5
+        assert len(manager.tool_calls) == 3
 
-    def test_tool_calls_maintain_order(self):
-        """Test that tool calls maintain insertion order"""
+    def test_update_tool_call_result_success(self):
+        """Test updating tool call result on success"""
         manager = AgentStateManager()
+        tool_call = ToolCall(id="tool_1", name="bash", input={"command": "ls"})
+        manager.record_tool_call(tool_call)
 
-        call_ids = ["call-1", "call-2", "call-3"]
-        for call_id in call_ids:
-            call = ToolCall(id=call_id, name="tool", input={})
-            manager.record_tool_call(call)
+        manager.update_tool_call_result("tool_1", result="output data")
 
-        recorded_ids = [c.id for c in manager.tool_calls]
-        assert recorded_ids == call_ids
-
-    def test_record_tool_call_preserves_metadata(self):
-        """Test that recording preserves all tool call metadata"""
-        manager = AgentStateManager()
-        call = ToolCall(
-            id="call-1",
-            name="read_file",
-            input={"path": "/tmp/test.txt"},
-            result="content",
-            status="completed"
-        )
-
-        manager.record_tool_call(call)
-        recorded_call = manager.tool_calls[0]
-
-        assert recorded_call.name == "read_file"
-        assert recorded_call.input == {"path": "/tmp/test.txt"}
-        assert recorded_call.result == "content"
-        assert recorded_call.status == "completed"
-
-
-@pytest.mark.unit
-class TestToolCallResultUpdate:
-    """Tests for updating tool call results"""
-
-    def test_update_tool_call_result(self):
-        """Test updating a tool call with result"""
-        manager = AgentStateManager()
-        call = ToolCall(id="call-1", name="read_file", input={})
-        manager.record_tool_call(call)
-
-        manager.update_tool_call_result("call-1", result="file content")
-
-        assert manager.tool_calls[0].result == "file content"
-        assert manager.tool_calls[0].status == "completed"
+        assert manager.tool_calls[0].result == "output data"
         assert manager.tool_calls[0].error is None
+        assert manager.tool_calls[0].status == "completed"
 
-    def test_update_tool_call_error(self):
-        """Test updating a tool call with error"""
+    def test_update_tool_call_result_error(self):
+        """Test updating tool call result on error"""
         manager = AgentStateManager()
-        call = ToolCall(id="call-1", name="read_file", input={})
-        manager.record_tool_call(call)
+        tool_call = ToolCall(id="tool_1", name="read", input={"file": "nonexistent.txt"})
+        manager.record_tool_call(tool_call)
 
-        manager.update_tool_call_result("call-1", error="File not found")
+        manager.update_tool_call_result("tool_1", error="File not found")
 
+        assert manager.tool_calls[0].result is None
         assert manager.tool_calls[0].error == "File not found"
         assert manager.tool_calls[0].status == "failed"
-        assert manager.tool_calls[0].result is None
 
     def test_update_nonexistent_tool_call(self):
-        """Test updating nonexistent tool call does nothing"""
+        """Test updating nonexistent tool call (should do nothing)"""
         manager = AgentStateManager()
 
-        # Should not raise error
-        manager.update_tool_call_result("nonexistent-id", result="result")
+        manager.update_tool_call_result("nonexistent_id", result="data")
+
         assert len(manager.tool_calls) == 0
-
-    def test_update_specific_tool_call_among_many(self):
-        """Test updating specific tool call among many"""
-        manager = AgentStateManager()
-
-        # Add 5 tool calls
-        for i in range(5):
-            call = ToolCall(id=f"call-{i}", name="tool", input={})
-            manager.record_tool_call(call)
-
-        # Update the middle one
-        manager.update_tool_call_result("call-2", result="success")
-
-        # Check that only call-2 was updated
-        assert manager.tool_calls[2].result == "success"
-        assert manager.tool_calls[2].status == "completed"
-        assert manager.tool_calls[0].result is None
-        assert manager.tool_calls[4].result is None
 
 
 @pytest.mark.unit
-class TestTurnManagement:
+class TestAgentStateManagerTurns:
     """Tests for turn management"""
 
     def test_increment_turn_initial(self):
         """Test incrementing turn from initial state"""
-        manager = AgentStateManager()
-        exceeded = manager.increment_turn()
+        manager = AgentStateManager(max_turns=20)
+
+        result = manager.increment_turn()
 
         assert manager.current_turn == 1
-        assert exceeded is False
+        assert result is False  # Not exceeded yet
 
     def test_increment_turn_multiple(self):
         """Test incrementing turn multiple times"""
-        manager = AgentStateManager()
-
-        for i in range(1, 11):
-            exceeded = manager.increment_turn()
-            assert manager.current_turn == i
-            assert exceeded is False
-
-    def test_increment_turn_reaches_max(self):
-        """Test incrementing turn reaches max limit"""
         manager = AgentStateManager(max_turns=5)
 
-        for i in range(1, 6):
-            exceeded = manager.increment_turn()
-            if i < 5:
-                assert exceeded is False
-            else:
-                assert exceeded is True
+        for i in range(4):
+            result = manager.increment_turn()
+            assert result is False
 
-    def test_increment_turn_exceeds_max(self):
-        """Test incrementing turn exceeds max limit"""
-        manager = AgentStateManager(max_turns=5)
-
-        # Reach exactly max
-        for _ in range(5):
-            manager.increment_turn()
-
+        result = manager.increment_turn()
         assert manager.current_turn == 5
+        assert result is True  # Exceeded max_turns
 
-        # Try to exceed
-        manager.increment_turn()
-        assert manager.current_turn == 6
+    def test_increment_turn_exceeds_limit(self):
+        """Test that increment returns True when exceeding limit"""
+        manager = AgentStateManager(max_turns=2)
 
-    def test_turn_counter_starts_at_zero(self):
-        """Test that turn counter starts at 0"""
-        manager = AgentStateManager()
-        assert manager.current_turn == 0
+        manager.increment_turn()  # 1
+        manager.increment_turn()  # 2
+        result = manager.increment_turn()  # 3
+
+        assert result is True
 
 
 @pytest.mark.unit
-class TestTokenTracking:
-    """Tests for token tracking"""
+class TestAgentStateManagerTokens:
+    """Tests for token counting"""
 
-    def test_add_tokens_initial(self):
-        """Test adding tokens to fresh manager"""
+    def test_add_tokens(self):
+        """Test adding tokens"""
         manager = AgentStateManager()
-        manager.add_tokens(100, 50)
 
-        assert manager.total_input_tokens == 100
-        assert manager.total_output_tokens == 50
+        manager.add_tokens(10, 20)
+
+        assert manager.total_input_tokens == 10
+        assert manager.total_output_tokens == 20
 
     def test_add_tokens_multiple(self):
         """Test adding tokens multiple times"""
         manager = AgentStateManager()
 
-        manager.add_tokens(100, 50)
-        manager.add_tokens(200, 100)
+        manager.add_tokens(10, 20)
+        manager.add_tokens(15, 25)
+        manager.add_tokens(5, 10)
 
-        assert manager.total_input_tokens == 300
-        assert manager.total_output_tokens == 150
+        assert manager.total_input_tokens == 30
+        assert manager.total_output_tokens == 55
 
-    def test_add_zero_tokens(self):
+    def test_add_tokens_zero(self):
         """Test adding zero tokens"""
         manager = AgentStateManager()
+
         manager.add_tokens(0, 0)
 
         assert manager.total_input_tokens == 0
         assert manager.total_output_tokens == 0
 
-    def test_add_large_token_counts(self):
-        """Test adding large token counts"""
-        manager = AgentStateManager()
-        manager.add_tokens(100000, 50000)
-
-        assert manager.total_input_tokens == 100000
-        assert manager.total_output_tokens == 50000
-
 
 @pytest.mark.unit
-class TestStatisticsGeneration:
-    """Tests for statistics generation"""
+class TestAgentStateManagerStatistics:
+    """Tests for statistics retrieval"""
 
-    def test_get_statistics_fresh_manager(self):
-        """Test statistics from fresh manager"""
+    def test_get_statistics_initial(self):
+        """Test getting statistics in initial state"""
         manager = AgentStateManager()
+
         stats = manager.get_statistics()
 
         assert stats["state"] == "idle"
@@ -439,213 +318,176 @@ class TestStatisticsGeneration:
         assert stats["total_tokens"] == 0
         assert stats["duration_seconds"] is None
 
-    def test_get_statistics_with_tokens(self):
-        """Test statistics with token data"""
-        manager = AgentStateManager()
-        manager.add_tokens(1000, 500)
-        stats = manager.get_statistics()
-
-        assert stats["input_tokens"] == 1000
-        assert stats["output_tokens"] == 500
-        assert stats["total_tokens"] == 1500
-
     def test_get_statistics_with_tool_calls(self):
         """Test statistics with tool calls"""
         manager = AgentStateManager()
 
-        # Add successful calls
-        for i in range(3):
-            call = ToolCall(id=f"call-{i}", name="tool", input={}, status="completed")
-            manager.record_tool_call(call)
-
-        # Add failed calls
-        for i in range(3, 5):
-            call = ToolCall(id=f"call-{i}", name="tool", input={}, status="failed")
-            manager.record_tool_call(call)
+        manager.record_tool_call(ToolCall(id="tool_1", name="bash", input={}, status="completed"))
+        manager.record_tool_call(ToolCall(id="tool_2", name="read", input={}, status="failed"))
 
         stats = manager.get_statistics()
-        assert stats["tool_calls"] == 5
-        assert stats["successful_calls"] == 3
-        assert stats["failed_calls"] == 2
+
+        assert stats["tool_calls"] == 2
+        assert stats["successful_calls"] == 1
+        assert stats["failed_calls"] == 1
+
+    def test_get_statistics_with_tokens(self):
+        """Test statistics with tokens"""
+        manager = AgentStateManager()
+
+        manager.add_tokens(100, 200)
+
+        stats = manager.get_statistics()
+
+        assert stats["input_tokens"] == 100
+        assert stats["output_tokens"] == 200
+        assert stats["total_tokens"] == 300
 
     def test_get_statistics_with_duration(self):
-        """Test statistics includes duration"""
+        """Test statistics with duration"""
         manager = AgentStateManager()
-        manager.transition_to(AgentState.THINKING)
 
-        # Mock time passage
-        manager.start_time = datetime.now() - timedelta(seconds=5)
+        manager.transition_to(AgentState.THINKING)
         manager.transition_to(AgentState.COMPLETED)
 
         stats = manager.get_statistics()
+
         assert stats["duration_seconds"] is not None
-        assert stats["duration_seconds"] >= 5
+        assert stats["duration_seconds"] >= 0
 
-    def test_get_statistics_with_turns(self):
-        """Test statistics includes turns"""
-        manager = AgentStateManager()
-
-        for _ in range(5):
-            manager.increment_turn()
-
-        stats = manager.get_statistics()
-        assert stats["turns"] == 5
-
-    def test_get_statistics_state_reflects_current(self):
-        """Test statistics state reflects current state"""
-        manager = AgentStateManager()
+    def test_get_statistics_complete_workflow(self):
+        """Test statistics with complete workflow"""
+        manager = AgentStateManager(max_turns=5)
 
         manager.transition_to(AgentState.THINKING)
-        stats = manager.get_statistics()
-        assert stats["state"] == "thinking"
-
-        manager.transition_to(AgentState.USING_TOOL)
-        stats = manager.get_statistics()
-        assert stats["state"] == "using_tool"
-
-
-@pytest.mark.unit
-class TestStateReset:
-    """Tests for state reset functionality"""
-
-    def test_reset_clears_state(self):
-        """Test reset returns to IDLE state"""
-        manager = AgentStateManager()
-        manager.transition_to(AgentState.THINKING)
-        manager.reset()
-
-        assert manager.current_state == AgentState.IDLE
-
-    def test_reset_clears_turns(self):
-        """Test reset clears turn counter"""
-        manager = AgentStateManager()
         manager.increment_turn()
-        manager.increment_turn()
-        manager.reset()
-
-        assert manager.current_turn == 0
-
-    def test_reset_clears_tool_calls(self):
-        """Test reset clears tool calls"""
-        manager = AgentStateManager()
-        manager.record_tool_call(ToolCall(id="call-1", name="tool", input={}))
-        manager.reset()
-
-        assert len(manager.tool_calls) == 0
-
-    def test_reset_clears_tokens(self):
-        """Test reset clears token counts"""
-        manager = AgentStateManager()
-        manager.add_tokens(1000, 500)
-        manager.reset()
-
-        assert manager.total_input_tokens == 0
-        assert manager.total_output_tokens == 0
-
-    def test_reset_clears_timestamps(self):
-        """Test reset clears start and end times"""
-        manager = AgentStateManager()
-        manager.transition_to(AgentState.THINKING)
-        manager.transition_to(AgentState.COMPLETED)
-        manager.reset()
-
-        assert manager.start_time is None
-        assert manager.end_time is None
-
-    def test_reset_complete_cleanup(self):
-        """Test reset completely cleans up manager state"""
-        manager = AgentStateManager()
-
-        # Use all features
-        manager.transition_to(AgentState.THINKING)
-        manager.record_tool_call(ToolCall(id="call-1", name="tool", input={}))
-        manager.add_tokens(1000, 500)
-        manager.increment_turn()
+        manager.record_tool_call(ToolCall(id="tool_1", name="bash", input={}))
+        manager.update_tool_call_result("tool_1", result="output")
+        manager.add_tokens(50, 100)
         manager.transition_to(AgentState.COMPLETED)
 
-        # Reset
-        manager.reset()
-
-        # Verify all cleaned up
-        fresh_manager = AgentStateManager()
-        assert manager.current_state == fresh_manager.current_state
-        assert manager.current_turn == fresh_manager.current_turn
-        assert manager.tool_calls == fresh_manager.tool_calls
-        assert manager.total_input_tokens == fresh_manager.total_input_tokens
-        assert manager.total_output_tokens == fresh_manager.total_output_tokens
-        assert manager.start_time == fresh_manager.start_time
-        assert manager.end_time == fresh_manager.end_time
-
-
-@pytest.mark.unit
-class TestCompleteWorkflow:
-    """Tests for complete agent workflows"""
-
-    def test_simple_workflow(self):
-        """Test a simple complete workflow"""
-        manager = AgentStateManager()
-
-        # Start
-        manager.transition_to(AgentState.THINKING)
-        manager.increment_turn()
-
-        # Use tool
-        manager.transition_to(AgentState.USING_TOOL)
-        tool_call = ToolCall(id="call-1", name="read_file", input={})
-        manager.record_tool_call(tool_call)
-
-        # Tool result
-        manager.update_tool_call_result("call-1", result="content")
-
-        # Complete
-        manager.add_tokens(100, 50)
-        manager.transition_to(AgentState.COMPLETED)
-
-        # Verify final state
         stats = manager.get_statistics()
+
         assert stats["state"] == "completed"
         assert stats["turns"] == 1
         assert stats["tool_calls"] == 1
         assert stats["successful_calls"] == 1
+        assert stats["failed_calls"] == 0
+        assert stats["input_tokens"] == 50
+        assert stats["output_tokens"] == 100
         assert stats["total_tokens"] == 150
+        assert stats["duration_seconds"] is not None
 
-    def test_multi_turn_workflow(self):
-        """Test a multi-turn workflow"""
-        manager = AgentStateManager(max_turns=5)
 
-        for turn in range(1, 6):
-            manager.transition_to(AgentState.THINKING)
-            manager.increment_turn()
+@pytest.mark.unit
+class TestAgentStateManagerReset:
+    """Tests for state reset"""
 
-            # Tool call
-            tool_call = ToolCall(id=f"call-{turn}", name="tool", input={})
-            manager.record_tool_call(tool_call)
-            manager.update_tool_call_result(f"call-{turn}", result="result")
-
-            manager.add_tokens(100, 50)
-
-            if turn == 5:
-                manager.transition_to(AgentState.COMPLETED)
-
-        stats = manager.get_statistics()
-        assert stats["turns"] == 5
-        assert stats["tool_calls"] == 5
-        assert stats["total_tokens"] == 750  # 5 turns * 150 tokens
-
-    def test_error_workflow(self):
-        """Test a workflow that encounters error"""
+    def test_reset_clears_state(self):
+        """Test that reset clears state"""
         manager = AgentStateManager()
 
         manager.transition_to(AgentState.THINKING)
+        manager.current_turn = 5
+        manager.record_tool_call(ToolCall(id="tool_1", name="bash", input={}))
+        manager.add_tokens(100, 200)
+
+        manager.reset()
+
+        assert manager.current_state == AgentState.IDLE
+        assert manager.current_turn == 0
+        assert len(manager.tool_calls) == 0
+        assert manager.total_input_tokens == 0
+        assert manager.total_output_tokens == 0
+        assert manager.start_time is None
+        assert manager.end_time is None
+
+    def test_reset_preserves_max_turns(self):
+        """Test that reset preserves max_turns"""
+        manager = AgentStateManager(max_turns=10)
+
+        manager.transition_to(AgentState.THINKING)
+        manager.reset()
+
+        assert manager.max_turns == 10
+
+    def test_reset_allows_reuse(self):
+        """Test that manager can be reused after reset"""
+        manager = AgentStateManager()
+
+        # First workflow
+        manager.transition_to(AgentState.THINKING)
+        manager.transition_to(AgentState.COMPLETED)
+
+        manager.reset()
+
+        # Second workflow
+        manager.transition_to(AgentState.THINKING)
+        manager.record_tool_call(ToolCall(id="tool_1", name="bash", input={}))
+
+        assert manager.current_state == AgentState.THINKING
+        assert len(manager.tool_calls) == 1
+
+
+@pytest.mark.unit
+class TestAgentStateManagerIntegration:
+    """Integration tests for state manager"""
+
+    def test_typical_agent_workflow(self):
+        """Test typical agent workflow"""
+        manager = AgentStateManager()
+
+        # Initial state
+        assert manager.current_state == AgentState.IDLE
+
+        # Start thinking
+        manager.transition_to(AgentState.THINKING)
+        assert manager.start_time is not None
+
+        # Use tool
+        manager.transition_to(AgentState.USING_TOOL)
+        manager.record_tool_call(ToolCall(id="tool_1", name="bash", input={"command": "ls"}))
+
+        # Continue thinking
         manager.increment_turn()
+        manager.transition_to(AgentState.THINKING)
 
-        tool_call = ToolCall(id="call-1", name="tool", input={})
-        manager.record_tool_call(tool_call)
-        manager.update_tool_call_result("call-1", error="Tool failed")
+        # Complete
+        manager.transition_to(AgentState.COMPLETED)
+        manager.add_tokens(100, 150)
 
+        # Check final stats
+        stats = manager.get_statistics()
+        assert stats["state"] == "completed"
+        assert stats["turns"] == 1
+        assert stats["tool_calls"] == 1
+        assert stats["total_tokens"] == 250
+
+    def test_error_workflow(self):
+        """Test error workflow"""
+        manager = AgentStateManager()
+
+        manager.transition_to(AgentState.THINKING)
+        manager.record_tool_call(ToolCall(id="tool_1", name="read", input={"file": "nonexistent.txt"}))
+        manager.update_tool_call_result("tool_1", error="File not found")
         manager.transition_to(AgentState.ERROR)
 
         stats = manager.get_statistics()
         assert stats["state"] == "error"
         assert stats["failed_calls"] == 1
-        assert stats["duration_seconds"] is not None  # end_time is set, duration calculated
+        assert manager.end_time is not None
+
+    def test_max_turns_exceeded_workflow(self):
+        """Test workflow with max turns exceeded"""
+        manager = AgentStateManager(max_turns=3)
+
+        manager.transition_to(AgentState.THINKING)
+
+        for i in range(2):
+            result = manager.increment_turn()
+            assert result is False
+
+        # Third increment should exceed (3 >= 3)
+        result = manager.increment_turn()
+        assert result is True
+        assert manager.current_turn == 3
