@@ -65,7 +65,7 @@ For detailed architecture design, data flow, Agent state machine and more:
 
 ## 🧪 Testing
 
-This project includes a comprehensive test suite with **359 passing tests** and **34% code coverage**.
+This project includes a comprehensive test suite with **1,100 passing tests** and **68% code coverage**.
 
 ```bash
 # Run all tests
@@ -77,15 +77,18 @@ pytest tests/unit/ --cov=src --cov-report=html
 
 ### Test Coverage
 
-- **Agent System**: 193 tests (state management, context, tools, permissions)
-- **LLM Clients**: 42 tests (Anthropic, OpenAI, Google)
-- **Tool System**: 47 tests (file ops, bash, search, todo)
-- **Hook System**: 63 tests (event types, manager, builder)
+- **Agent System**: 97+ tests (state management, context, feedback, permission)
+- **LLM Clients**: 35+ tests (Anthropic, OpenAI, Google, factory)
+- **Tool System**: 40+ tests (executor, file ops, bash, search, todo)
+- **Hook System**: 70+ tests (types, manager, builder, validator, config loader)
+- **Commands**: 60+ tests (builtin commands, persistence, workspace)
+- **Other**: 800+ additional integration and edge case tests
 
 ### High Coverage Modules (>80%)
 
-- `hooks/manager.py`: 95% | `hooks/types.py`: 95% | `tools/executor.py`: 95%
-- `agents/tool_manager.py`: 91% | `tools/file_ops.py`: 88% | `tools/base.py`: 87%
+- **95%+**: `hooks/manager.py`, `agents/context_manager.py`, `clients/base.py`
+- **85%+**: `tools/file_ops.py`, `tools/base.py`, `tools/bash.py`, `hooks/config_loader.py`
+- **100% coverage**: `agents/feedback.py`, `agents/state.py`, `commands/builtin.py`, `commands/persistence_commands.py`, `persistence.py`, `utils/output.py`
 
 For quick start guide and detailed documentation:
 
