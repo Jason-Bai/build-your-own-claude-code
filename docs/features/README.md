@@ -24,7 +24,7 @@ Organized by implementation order to easily track feature evolution.
 
 #### Key Improvements
 
-- Persistent history to `~/.cache/claude-code/.claude_code_history`
+- Persistent history to `~/.cache/tiny-claude-code/.claude_code_history`
 - Singleton pattern ensures application-wide shared history
 - Upgrade from basic `input()` to PromptInputManager
 - Improved user experience with advanced editing features
@@ -208,15 +208,15 @@ Organized by implementation order to easily track feature evolution.
 
 ## 📊 Feature Matrix
 
-| Phase | Feature                        | Type         | Priority | Difficulty | Completion | Related Commit |
-| ----- | ------------------------------ | ------------ | -------- | ---------- | ---------- | -------------- |
-| P1    | Input Enhancement - Prompt-Toolkit | UX        | -        | ⭐⭐      | ✅ 100%    | 1a81d61        |
-| P2    | Output Enhancement - Rich      | UX           | -        | ⭐⭐      | ✅ 100%    | e697509        |
-| P3    | Event-Driven Feedback          | Architecture | -        | ⭐⭐      | ✅ 100%    | 1a17886        |
-| P4    | Sandbox Execution              | Security     | P0 🔴    | ⭐⭐⭐    | 📋 0%      | -              |
-| P5    | Conditional Routing            | Flow Control | P1 🟡    | ⭐⭐      | 📋 0%      | -              |
-| P6    | Checkpoint Persistence         | State Mgmt   | P1 🟡    | ⭐⭐⭐    | 📋 0%      | -              |
-| P7    | Multi-Agent Orchestration      | Collaboration| P2 🟢    | ⭐⭐⭐⭐  | 📋 0%      | -              |
+| Phase | Feature                            | Type          | Priority | Difficulty | Completion | Related Commit |
+| ----- | ---------------------------------- | ------------- | -------- | ---------- | ---------- | -------------- |
+| P1    | Input Enhancement - Prompt-Toolkit | UX            | -        | ⭐⭐       | ✅ 100%    | 1a81d61        |
+| P2    | Output Enhancement - Rich          | UX            | -        | ⭐⭐       | ✅ 100%    | e697509        |
+| P3    | Event-Driven Feedback              | Architecture  | -        | ⭐⭐       | ✅ 100%    | 1a17886        |
+| P4    | Sandbox Execution                  | Security      | P0 🔴    | ⭐⭐⭐     | 📋 0%      | -              |
+| P5    | Conditional Routing                | Flow Control  | P1 🟡    | ⭐⭐       | 📋 0%      | -              |
+| P6    | Checkpoint Persistence             | State Mgmt    | P1 🟡    | ⭐⭐⭐     | 📋 0%      | -              |
+| P7    | Multi-Agent Orchestration          | Collaboration | P2 🟢    | ⭐⭐⭐⭐   | 📋 0%      | -              |
 
 ---
 
