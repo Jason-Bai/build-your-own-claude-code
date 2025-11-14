@@ -29,14 +29,14 @@ open htmlcov/index.html  # macOS
 
 ## 📋 Common Commands
 
-| Command | Description |
-|---------|-------------|
-| `pytest tests/unit/` | Run all unit tests |
-| `pytest tests/unit/ -v` | Verbose output |
-| `pytest tests/unit/ -x` | Stop on first failure |
-| `pytest tests/unit/ --cov=src` | Show coverage |
-| `pytest tests/unit/test_hook_manager.py` | Run specific file |
-| `pytest -k "test_agent"` | Run tests matching pattern |
+| Command                                  | Description                |
+| ---------------------------------------- | -------------------------- |
+| `pytest tests/unit/`                     | Run all unit tests         |
+| `pytest tests/unit/ -v`                  | Verbose output             |
+| `pytest tests/unit/ -x`                  | Stop on first failure      |
+| `pytest tests/unit/ --cov=src`           | Show coverage              |
+| `pytest tests/unit/test_hook_manager.py` | Run specific file          |
+| `pytest -k "test_agent"`                 | Run tests matching pattern |
 
 ---
 
@@ -102,17 +102,20 @@ class TestWithFixtures:
 ### Available Fixtures
 
 **Mock Objects:**
+
 - `mock_agent_state` - Agent state machine
 - `mock_context_manager` - Context manager
 - `mock_tool_manager` - Tool manager
 - `mock_llm_client` - LLM client
 
 **Sample Data:**
+
 - `sample_messages` - Conversation messages
 - `sample_agent_config` - Agent configuration
 - `sample_tools` - Tool collections
 
 **File Operations:**
+
 - `temp_test_dir` - Temporary directory
 - `sample_python_file` - Python file example
 
@@ -251,13 +254,14 @@ Current overall coverage: **34%**
 1. **Explore existing tests** - Read `tests/unit/test_hook_manager.py` for examples
 2. **Check coverage** - Run `pytest --cov=src --cov-report=html`
 3. **Write tests for new features** - Follow TDD approach
-4. **Read full summary** - See [testing_summary.md](./testing_summary.md)
+4. **Read full summary** - See [summary.md](./summary.md)
 
 ---
 
 ## ❓ Common Issues
 
 **Q: Tests fail with "import error"**
+
 ```bash
 # Make sure you're in project root
 cd /path/to/build-your-own-claude-code
@@ -265,17 +269,20 @@ pytest tests/unit/
 ```
 
 **Q: Async tests don't work**
+
 ```bash
 # Install pytest-asyncio
 pip install pytest-asyncio
 ```
 
 **Q: How to run only fast tests?**
+
 ```bash
 pytest -m "not slow" tests/unit/
 ```
 
 **Q: How to see which tests are slow?**
+
 ```bash
 pytest --durations=10 tests/unit/
 ```

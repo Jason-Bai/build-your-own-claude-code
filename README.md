@@ -89,9 +89,9 @@ pytest tests/unit/ --cov=src --cov-report=html
 
 For quick start guide and detailed documentation:
 
-👉 **[docs/testing_quickstart.md](./docs/testing_quickstart.md)** - Get started in 5 minutes
+👉 **[docs/testing/quickstart.md](./docs/testing/quickstart.md)** - Get started in 5 minutes
 
-👉 **[docs/testing_summary.md](./docs/testing_summary.md)** - Complete testing overview
+👉 **[docs/testing/summary.md](./docs/testing/summary.md)** - Complete testing overview
 
 ## 🛠️ Development Guide
 
