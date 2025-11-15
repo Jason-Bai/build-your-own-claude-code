@@ -13,7 +13,7 @@ A production-ready AI coding assistant implementation inspired by Anthropic's Cl
 ### Core Components
 
 - **Agent System** (`src/agents/`) - FSM-based state machine (IDLE → THINKING → USING_TOOL → COMPLETED)
-- **LLM Clients** (`src/clients/`) - Multi-provider support (Anthropic, OpenAI, Google)
+- **LLM Clients** (`src/clients/`) - Multi-provider support (Anthropic, OpenAI)
 - **Tool System** (`src/tools/`) - 7 built-in tools + MCP integration
 - **Hook System** (`src/hooks/`) - Event-driven extensibility
 - **CLI Enhancement** - Prompt-Toolkit (input) + Rich (output)

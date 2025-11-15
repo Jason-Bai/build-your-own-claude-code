@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from datetime import datetime
 from ..persistence.manager import PersistenceManager
 from .types import Checkpoint
@@ -59,3 +59,40 @@ class CheckpointManager:
                 if before_step is None or cp.step_index < before_step:
                     return cp
         return None
+
+    async def get_formatted_checkpoint_history(self) -> List[Tuple[str, str]]:
+        """
+        获取格式化为交互式选择器的检查点历史记录。
+        返回格式: [(execution_id, display_text), ...]
+        """
+        # 获取所有检查点
+        try:
+            checkpoint_ids = await self.persistence.storage.list("checkpoint")
+            if not checkpoint_ids:
+                return []
+
+            # 按 execution_id 分组
+            checkpoints_by_exec = {}
+            for cp_id in checkpoint_ids:
+                data = await self.persistence.load_checkpoint(cp_id)
+                if data:
+                    cp = Checkpoint.from_dict(data)
+                    exec_id = cp.execution_id
+                    if exec_id not in checkpoints_by_exec:
+                        checkpoints_by_exec[exec_id] = []
+                    checkpoints_by_exec[exec_id].append(cp)
+
+            # 为每个 execution 创建显示项
+            formatted_items = []
+            for exec_id in sorted(checkpoints_by_exec.keys(), reverse=True):
+                checkpoints = checkpoints_by_exec[exec_id]
+                # 获取最后一个检查点的信息
+                last_cp = checkpoints[-1] if checkpoints else None
+                if last_cp:
+                    display_text = f"Restore {exec_id}\n  Step: {last_cp.step_name}"
+                    formatted_items.append((exec_id, display_text))
+
+            return formatted_items
+        except:
+            # 如果出错，返回空列表而不是崩溃
+            return []

@@ -188,3 +188,9 @@ class BaseClient(ABC):
         """返回上下文窗口大小（tokens）"""
         pass
 
+    @property
+    @abstractmethod
+    def provider_name(self) -> str:
+        """返回提供商名称 ("anthropic" | "openai" | "kimi")"""
+        pass
+

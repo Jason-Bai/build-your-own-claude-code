@@ -75,7 +75,8 @@ class OutputFormatter:
             cls.console.print(f"🔧 {tool_name}", style="yellow")
 
         if cls.level.value >= OutputLevel.VERBOSE.value and params:
-            cls.console.print(f"   Parameters: {json.dumps(params, indent=2)}", style="dim")
+            cls.console.print(
+                f"   Parameters: {json.dumps(params, indent=2)}", style="dim")
 
     @classmethod
     def tool_result(cls, tool_name: str, success: bool, output: str = ""):
@@ -84,7 +85,8 @@ class OutputFormatter:
             status = "✓" if success else "✗"
             style = "green" if success else "red"
             # 限制输出长度
-            display_output = output[:200] + "..." if len(output) > 200 else output
+            display_output = output[:200] + \
+                "..." if len(output) > 200 else output
 
             panel = Panel(
                 display_output,
@@ -132,7 +134,8 @@ class OutputFormatter:
             word_wrap=True
         )
         if title:
-            panel = Panel(syntax, title=title, border_style="cyan", expand=False)
+            panel = Panel(syntax, title=title,
+                          border_style="cyan", expand=False)
             cls.console.print(panel)
         else:
             cls.console.print(syntax)
@@ -174,7 +177,7 @@ class OutputFormatter:
         cls.console.print("━" * 50, style="dim")
 
     @classmethod
-    def print_welcome(cls, model_name: str, provider: str, tools_count: int, claude_md_info: str = None):
+    def print_welcome(cls, model_name: str, provider: str, tools_count: int):
         """打印欢迎信息 - 增强样式"""
         welcome_text = f"""[bold cyan]🤖 Build Your Own Claude Code[/] - [yellow]Enhanced Edition[/]
 
@@ -182,9 +185,6 @@ class OutputFormatter:
 [cyan]✓ Tools:[/] {tools_count} built-in
 
 [cyan]ℹ️  Commands:[/] Type [bold]/help[/] to see available commands"""
-
-        if claude_md_info:
-            welcome_text += f"\n\n{claude_md_info}"
 
         panel = Panel(
             welcome_text,

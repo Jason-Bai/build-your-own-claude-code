@@ -10,6 +10,7 @@ from ..config.loader import load_config
 from ..config.args import parse_args
 from ..initialization.setup import initialize_agent, _setup_event_listeners
 
+
 async def main():
     """Main CLI application entry point"""
     args = parse_args()
@@ -24,6 +25,7 @@ async def main():
 
     # Load configuration and initialize agent
     config = load_config(args.config)
+    print(config)
     agent = await initialize_agent(config, args)
     await _setup_event_listeners(get_event_bus())
 
@@ -46,18 +48,16 @@ async def main():
     OutputFormatter.print_welcome(
         model_name=agent.client.model_name,
         provider=config.get("model", {}).get("provider", "unknown"),
-        tools_count=len(agent.tool_manager.tools) if hasattr(agent, 'tool_manager') else 0,
-        claude_md_info=claude_md_info
+        tools_count=len(agent.tool_manager.tools) if hasattr(
+            agent, 'tool_manager') else 0,
     )
 
     # Load project context from CLAUDE.md if present
     if claude_md_info:
         try:
-            agent.context_manager.add_user_message(
+            agent.context_manager.set_system_prompt(
                 f"[System: Project Context]\n\n{claude_md_info}"
             )
-            OutputFormatter.success(
-                f"Auto-loaded CLAUDE.md ({len(claude_md_info)} chars)")
         except Exception as e:
             OutputFormatter.warning(f"Failed to load CLAUDE.md: {e}")
 
@@ -65,32 +65,73 @@ async def main():
     input_manager = get_input_manager()
 
     # Main REPL loop
-    while True:
-        try:
-            user_input = await input_manager.async_get_input()
-            if not user_input:
+    is_first_iteration = True
+    try:
+        while True:
+            try:
+                # Print separator (but not on first iteration)
+                if not is_first_iteration:
+                    OutputFormatter.print_separator()
+                is_first_iteration = False
+
+                user_input = await input_manager.async_get_input()
+                if not user_input:
+                    continue
+
+                # Check if it's a command
+                if command_registry.is_command(user_input):
+                    result = await command_registry.execute(user_input, cli_context)
+                    if result:
+                        OutputFormatter.print_assistant_response(result)
+                    continue
+
+                # Otherwise, send to agent
+                OutputFormatter.print_separator()
+                OutputFormatter.print_assistant_response_header()
+                result = await agent.run(user_input, verbose=True)
+
+                if isinstance(result, dict):
+                    # Show feedback messages
+                    feedback_messages = result.get("feedback", [])
+                    for feedback_msg in feedback_messages:
+                        OutputFormatter.info(feedback_msg)
+
+                    final_response = result.get("final_response", "")
+                    if final_response:
+                        OutputFormatter.print_assistant_response(
+                            final_response)
+
+                    # Auto-save (if enabled)
+                    if config.get("auto_save", False):
+                        stats = result.get("agent_state", {})
+                        conversation_id = f"conv-auto-save-{Path.cwd().name}-{os.getpid()}"
+                        await agent.persistence.save_conversation(
+                            conversation_id,
+                            [msg.model_dump()
+                             for msg in agent.context_manager.messages],
+                            agent.context_manager.system_prompt,
+                            agent.context_manager.summary,
+                            {"stats": stats}
+                        )
+
+            except KeyboardInterrupt:
+                OutputFormatter.info("Use /exit to quit properly")
                 continue
+            except EOFError:
+                OutputFormatter.success("Goodbye!")
+                break
+            except Exception as e:
+                OutputFormatter.error(str(e))
+                import traceback
+                traceback.print_exc()
+                OutputFormatter.info("Type /clear to reset if needed")
 
-            # Check if it's a command
-            if command_registry.is_command(user_input):
-                result = await command_registry.execute(user_input, cli_context)
-                if result:
-                    OutputFormatter.print_assistant_response(result)
-                continue
+    finally:
+        # Clean up MCP connections
+        if agent.mcp_client:
+            OutputFormatter.info("Disconnecting MCP servers...")
+            await agent.mcp_client.disconnect_all()
 
-            # Otherwise, send to agent
-            result = await agent.run(user_input, verbose=True)
-            if isinstance(result, dict):
-                final_response = result.get("final_response", "")
-                if final_response:
-                    OutputFormatter.print_assistant_response(final_response)
-
-        except KeyboardInterrupt:
-            continue
-        except EOFError:
-            break
-        except Exception as e:
-            OutputFormatter.error(str(e))
 
 def cli():
     """CLI entry point"""

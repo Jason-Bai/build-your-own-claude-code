@@ -31,15 +31,14 @@ class TestOpenAIClientInitialization:
 
     def test_openai_import_error_handling(self):
         """Test that ImportError is raised when OpenAI not available"""
-        # Patch OPENAI_AVAILABLE to False to test error path
+        # Directly patch OPENAI_AVAILABLE during class instantiation
         with patch('src.clients.openai.OPENAI_AVAILABLE', False):
-            from src.clients import openai as openai_module
-            # Need to reload to pick up the patched value
-            import importlib
-            importlib.reload(openai_module)
+            # Import the class fresh with the patched value
+            with patch('src.clients.openai.AsyncOpenAI'):
+                from src.clients.openai import OpenAIClient
 
-            with pytest.raises(ImportError, match="OpenAI package not installed"):
-                openai_module.OpenAIClient("test_api_key")
+                with pytest.raises(ImportError, match="OpenAI package not installed"):
+                    OpenAIClient("test_api_key")
 
 
 @pytest.mark.unit

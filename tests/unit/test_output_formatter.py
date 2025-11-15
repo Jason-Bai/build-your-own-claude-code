@@ -345,7 +345,7 @@ class TestOutputFormatterWelcome:
         mock_console = MagicMock()
         OutputFormatter.console = mock_console
 
-        OutputFormatter.print_welcome("gpt-4o", "openai", 7, claude_md_info="Extra info")
+        OutputFormatter.print_welcome("gpt-4o", "openai", 7)
 
         mock_console.print.assert_called()
 

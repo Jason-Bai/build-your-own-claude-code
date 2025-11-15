@@ -84,6 +84,9 @@ class TestNormalizeFinishReason:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         assert client._normalize_finish_reason("STOP") == "end_turn"
@@ -103,6 +106,9 @@ class TestNormalizeFinishReason:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         assert client._normalize_finish_reason("stop") == "end_turn"
@@ -121,6 +127,9 @@ class TestNormalizeFinishReason:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         assert client._normalize_finish_reason("TOOL_CALLS") == "tool_use"
@@ -138,6 +147,9 @@ class TestNormalizeFinishReason:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         assert client._normalize_finish_reason("SAFETY") == "stop_sequence"
@@ -155,6 +167,9 @@ class TestNormalizeFinishReason:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         assert client._normalize_finish_reason("UNKNOWN") == "end_turn"
@@ -172,6 +187,9 @@ class TestNormalizeFinishReason:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         assert client._normalize_finish_reason(None) == "end_turn"
@@ -189,6 +207,9 @@ class TestNormalizeFinishReason:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         mock_enum = Mock()
@@ -213,6 +234,9 @@ class TestExtractTextContent:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
         mock_obj = Mock()
@@ -234,6 +258,9 @@ class TestExtractTextContent:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -267,6 +294,9 @@ class TestExtractTextContent:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -302,6 +332,9 @@ class TestExtractTextContent:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -325,6 +358,9 @@ class TestExtractTextContent:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -352,6 +388,9 @@ class TestSafeCreateResponse:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -379,6 +418,9 @@ class TestSafeCreateResponse:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -406,6 +448,9 @@ class TestSafeCreateResponse:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -432,6 +477,9 @@ class TestSafeCreateResponse:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 
@@ -462,6 +510,9 @@ class TestFinishReasonMapping:
             @property
             def context_window(self):
                 return 8000
+            @property
+            def provider_name(self):
+                return "test"
 
         client = TestClient()
 

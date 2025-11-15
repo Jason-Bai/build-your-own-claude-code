@@ -450,7 +450,7 @@ class TestWelcomeScreen:
     def test_print_welcome_with_claude_info(self):
         """Test printing welcome screen with claude info"""
         with patch.object(OutputFormatter.console, 'print') as mock_print:
-            OutputFormatter.print_welcome("claude-sonnet-4", "anthropic", 7, claude_md_info="Version 1.0")
+            OutputFormatter.print_welcome("claude-sonnet-4", "anthropic", 7)
             mock_print.assert_called()
 
 

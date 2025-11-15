@@ -106,3 +106,7 @@ class AnthropicClient(BaseClient):
     def context_window(self) -> int:
         return 200000  # Claude 3.5 Sonnet
 
+    @property
+    def provider_name(self) -> str:
+        return "anthropic"
+

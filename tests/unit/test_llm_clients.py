@@ -1,7 +1,7 @@
 """
 Unit tests for LLM Clients module
 
-Tests the client implementations (Anthropic, OpenAI, Google) and factory,
+Tests the client implementations (Anthropic, OpenAI) and factory,
 including message creation, streaming, and provider management.
 """
 
@@ -328,7 +328,7 @@ class TestProviderAvailability:
 
     def test_check_all_providers(self):
         """Test checking all provider types"""
-        for provider in ["anthropic", "openai", "google"]:
+        for provider in ["anthropic", "openai"]:
             result = check_provider_available(provider)
             assert isinstance(result, bool)
 

@@ -152,7 +152,6 @@ See: [hotfixes/v2025.01.13/2-fix-tab-autocomplete.md](./hotfixes/v2025.01.13/2-f
 
 ### Known Issues
 
-- Google Gemini client integration in progress, free tier does not support tool calling
 - OpenAI client integration in progress
 - Certain terminals (such as IDLE) may not support full color and style support
 

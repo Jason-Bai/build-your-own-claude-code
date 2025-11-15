@@ -41,16 +41,51 @@ class AgentContextManager:
             content=content
         ))
 
-    def add_tool_results(self, tool_results: List[Dict]):
-        """添加工具结果"""
+    def add_tool_results(self, tool_results: List[Dict], provider: str = "anthropic"):
+        """
+        添加工具结果（支持不同提供商的格式差异）
+
+        对于 Kimi/OpenAI，工具结果需要转换为标准格式，其中：
+        - tool_use_id 转换为 tool_call_id（OpenAI/Kimi 期望的格式）
+        - 必须作为 role="user" 消息添加（不是 role="tool"）
+
+        Args:
+            tool_results: 工具结果列表（Anthropic 格式）
+            provider: 提供商名称 ("anthropic" | "openai" | "kimi")
+        """
         if not tool_results:
             return
 
-        # 工具结果作为用户消息添加
-        self.messages.append(Message(
-            role="user",
-            content=tool_results
-        ))
+        # 根据提供商转换消息格式
+        if provider in ["openai", "kimi"]:
+            # OpenAI/Kimi 格式：转换 tool_use_id 为 tool_call_id
+            converted = []
+            for result in tool_results:
+                # 获取 tool_call_id，确保不为 None/空
+                tool_call_id = result.get("tool_use_id") or result.get("tool_call_id")
+
+                converted_result = {
+                    "type": "tool_result",
+                    "content": result.get("content", "")
+                }
+
+                # 只有在 tool_call_id 不为空时才添加
+                if tool_call_id:
+                    converted_result["tool_call_id"] = tool_call_id
+
+                converted.append(converted_result)
+
+            # 工具结果作为用户消息添加
+            self.messages.append(Message(
+                role="user",
+                content=converted
+            ))
+        else:
+            # Anthropic 格式（保持原样）
+            self.messages.append(Message(
+                role="user",
+                content=tool_results
+            ))
 
     def get_messages(self) -> List[Dict]:
         """获取消息列表（API 格式）"""

@@ -181,7 +181,7 @@ class EnhancedAgent:
                 self._transition_state(AgentState.USING_TOOL)
                 tool_results = await self._execute_tools(tool_uses, verbose, feedback)
                 self.context_manager.add_assistant_message(response.content)
-                self.context_manager.add_tool_results(tool_results)
+                self.context_manager.add_tool_results(tool_results, provider=self.client.provider_name)
 
                 await self.execution_tracker.track_step(
                     execution_id=execution_id, step_name=f"Tool Execution Turn {self.state_manager.current_turn}",

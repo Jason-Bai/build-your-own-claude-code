@@ -11,10 +11,10 @@ import os
 import sys
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock, patch, MagicMock, mock_open
-from src.main import (
-    load_config, parse_args, _resolve_env_vars, _setup_hooks,
-    _load_user_hooks, _setup_event_listeners, initialize_agent, cli
-)
+from src.config.loader import load_config, _resolve_env_vars
+from src.config.args import parse_args
+from src.initialization.setup import initialize_agent, _setup_hooks, _load_user_hooks, _setup_event_listeners
+from src.cli.main import cli
 from src.utils.output import OutputFormatter, OutputLevel
 from src.agents import PermissionMode
 from src.events import EventBus, EventType
@@ -53,13 +53,17 @@ class TestLoadConfig:
             with patch.dict(os.environ, {}, clear=True):
                 config = load_config("~/.tiny-claude-code/settings.json")
                 assert isinstance(config, dict)
-                assert config == {}
+                # Should have model and providers config with defaults even if file doesn't exist
+                assert "model" in config
+                assert "providers" in config
+                assert config["providers"]["anthropic"]["model_name"] == "claude-sonnet-4-5-20250929"
+                assert config["providers"]["openai"]["model_name"] == "gpt-4o"
 
     def test_load_config_with_env_vars(self):
         """Test load_config merges environment variables"""
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "env-key"}, clear=True):
-                with patch('src.main.load_dotenv'):
+                with patch('src.config.loader.load_dotenv'):
                     config = load_config("~/.tiny-claude-code/settings.json")
                     assert isinstance(config, dict)
 
@@ -68,7 +72,7 @@ class TestLoadConfig:
         test_config = {"model": {"ANTHROPIC_API_KEY": "config-key"}}
         with patch('pathlib.Path.exists', side_effect=lambda: True):
             with patch('builtins.open', mock_open(read_data=json.dumps(test_config))):
-                with patch('src.main.load_dotenv'):
+                with patch('src.config.loader.load_dotenv'):
                     with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "env-key"}):
                         config = load_config("~/.tiny-claude-code/settings.json")
                         assert isinstance(config, dict)
@@ -196,7 +200,7 @@ class TestParseArgs:
 class TestSetupHooks:
     """Tests for _setup_hooks function"""
 
-    @patch('src.main.HookManager')
+    @patch('src.initialization.setup.HookManager')
     def test_setup_hooks_with_verbose_false(self, mock_hook_manager):
         """Test _setup_hooks doesn't register hooks in non-verbose mode"""
         hook_manager = Mock()
@@ -204,7 +208,7 @@ class TestSetupHooks:
         # Should still register error handler
         hook_manager.register_error_handler.assert_called()
 
-    @patch('src.main.HookManager')
+    @patch('src.initialization.setup.HookManager')
     def test_setup_hooks_with_verbose_true(self, mock_hook_manager):
         """Test _setup_hooks registers log hooks in verbose mode"""
         hook_manager = Mock()
@@ -212,7 +216,7 @@ class TestSetupHooks:
         # Should register multiple hooks
         assert hook_manager.register.call_count > 0
 
-    @patch('src.main.HookManager')
+    @patch('src.initialization.setup.HookManager')
     def test_setup_hooks_registers_error_handler(self, mock_hook_manager):
         """Test _setup_hooks always registers error handler"""
         hook_manager = Mock()
@@ -228,14 +232,14 @@ class TestLoadUserHooks:
     async def test_load_user_hooks_basic(self):
         """Test _load_user_hooks basic execution"""
         hook_manager = Mock()
-        with patch('src.main.HookConfigLoader'):
+        with patch('src.initialization.setup.HookConfigLoader'):
             await _load_user_hooks(hook_manager, verbose=False)
 
     @pytest.mark.asyncio
     async def test_load_user_hooks_with_verbose(self):
         """Test _load_user_hooks with verbose mode"""
         hook_manager = Mock()
-        with patch('src.main.HookConfigLoader'):
+        with patch('src.initialization.setup.HookConfigLoader'):
             await _load_user_hooks(hook_manager, verbose=True)
 
 
@@ -277,14 +281,17 @@ class TestInitializeAgent:
     @pytest.mark.asyncio
     async def test_initialize_agent_requires_api_key(self):
         """Test initialize_agent requires API key"""
-        config = {"model": {}}
+        config = {
+            "model": {"provider": "anthropic"},
+            "providers": {"anthropic": {"api_key": None}}
+        }
         args = Mock()
         args.verbose = False
         args.dangerously_skip_permissions = False
         args.auto_approve_all = False
         args.always_ask = False
-        with patch('src.main.check_provider_available', return_value=False):
-            # The function will sys.exit when no API provider is found
+        with patch('src.initialization.setup.check_provider_available', return_value=True):
+            # The function will sys.exit when no API key is found
             # So we expect this to exit with status 1
             try:
                 await initialize_agent(config, args)
@@ -299,15 +306,23 @@ class TestInitializeAgent:
         """Test initialize_agent with valid configuration"""
         config = {
             "model": {
-                "ANTHROPIC_API_KEY": "test-key",
-                "ANTHROPIC_MODEL": "claude-sonnet-4",
+                "provider": "anthropic",
+                "temperature": 0.7,
+                "max_tokens": 4000
+            },
+            "providers": {
+                "anthropic": {
+                    "api_key": "test-key",
+                    "model_name": "claude-sonnet-4",
+                    "api_base": "https://api.anthropic.com/v1"
+                }
             }
         }
         mock_client = Mock()
         mock_client.context_window = 8000
-        with patch('src.main.check_provider_available', return_value=True):
-            with patch('src.main.create_client', return_value=mock_client):
-                with patch('src.main.EnhancedAgent'):
+        with patch('src.initialization.setup.check_provider_available', return_value=True):
+            with patch('src.initialization.setup.create_client', return_value=mock_client):
+                with patch('src.initialization.setup.EnhancedAgent'):
                     agent = await initialize_agent(config, None)
                     assert agent is not None
 
@@ -316,7 +331,14 @@ class TestInitializeAgent:
         """Test initialize_agent sets permission mode correctly"""
         config = {
             "model": {
-                "ANTHROPIC_API_KEY": "test-key",
+                "provider": "anthropic"
+            },
+            "providers": {
+                "anthropic": {
+                    "api_key": "test-key",
+                    "model_name": "claude-opus",
+                    "api_base": "https://api.anthropic.com/v1"
+                }
             }
         }
         args = Mock()
@@ -324,9 +346,9 @@ class TestInitializeAgent:
         args.dangerously_skip_permissions = True
         mock_client = Mock()
         mock_client.context_window = 8000
-        with patch('src.main.check_provider_available', return_value=True):
-            with patch('src.main.create_client', return_value=mock_client):
-                with patch('src.main.EnhancedAgent') as mock_agent_class:
+        with patch('src.initialization.setup.check_provider_available', return_value=True):
+            with patch('src.initialization.setup.create_client', return_value=mock_client):
+                with patch('src.initialization.setup.EnhancedAgent') as mock_agent_class:
                     await initialize_agent(config, args)
                     # Check that permission mode was set to SKIP_ALL
                     call_kwargs = mock_agent_class.call_args[1]
@@ -337,7 +359,14 @@ class TestInitializeAgent:
         """Test initialize_agent with auto-approve-all mode"""
         config = {
             "model": {
-                "ANTHROPIC_API_KEY": "test-key",
+                "provider": "anthropic"
+            },
+            "providers": {
+                "anthropic": {
+                    "api_key": "test-key",
+                    "model_name": "claude-opus",
+                    "api_base": "https://api.anthropic.com/v1"
+                }
             }
         }
         args = Mock()
@@ -347,9 +376,9 @@ class TestInitializeAgent:
         args.always_ask = False
         mock_client = Mock()
         mock_client.context_window = 8000
-        with patch('src.main.check_provider_available', return_value=True):
-            with patch('src.main.create_client', return_value=mock_client):
-                with patch('src.main.EnhancedAgent') as mock_agent_class:
+        with patch('src.initialization.setup.check_provider_available', return_value=True):
+            with patch('src.initialization.setup.create_client', return_value=mock_client):
+                with patch('src.initialization.setup.EnhancedAgent') as mock_agent_class:
                     await initialize_agent(config, args)
                     call_kwargs = mock_agent_class.call_args[1]
                     assert call_kwargs['permission_mode'] == PermissionMode.AUTO_APPROVE_ALL
@@ -359,7 +388,14 @@ class TestInitializeAgent:
         """Test initialize_agent with always-ask mode"""
         config = {
             "model": {
-                "ANTHROPIC_API_KEY": "test-key",
+                "provider": "anthropic"
+            },
+            "providers": {
+                "anthropic": {
+                    "api_key": "test-key",
+                    "model_name": "claude-opus",
+                    "api_base": "https://api.anthropic.com/v1"
+                }
             }
         }
         args = Mock()
@@ -369,31 +405,34 @@ class TestInitializeAgent:
         args.always_ask = True
         mock_client = Mock()
         mock_client.context_window = 8000
-        with patch('src.main.check_provider_available', return_value=True):
-            with patch('src.main.create_client', return_value=mock_client):
-                with patch('src.main.EnhancedAgent') as mock_agent_class:
+        with patch('src.initialization.setup.check_provider_available', return_value=True):
+            with patch('src.initialization.setup.create_client', return_value=mock_client):
+                with patch('src.initialization.setup.EnhancedAgent') as mock_agent_class:
                     await initialize_agent(config, args)
                     call_kwargs = mock_agent_class.call_args[1]
                     assert call_kwargs['permission_mode'] == PermissionMode.ALWAYS_ASK
 
     @pytest.mark.asyncio
     async def test_initialize_agent_openai_fallback(self):
-        """Test initialize_agent falls back to OpenAI if Anthropic unavailable"""
+        """Test initialize_agent with OpenAI provider"""
         config = {
             "model": {
-                "ANTHROPIC_API_KEY": "anthropic-key",
-                "OPENAI_API_KEY": "openai-key",
+                "provider": "openai"
+            },
+            "providers": {
+                "openai": {
+                    "api_key": "sk-test-openai-key",
+                    "model_name": "gpt-4o",
+                    "api_base": "https://api.openai.com/v1"
+                }
             }
         }
         mock_client = Mock()
         mock_client.context_window = 8000
 
-        def check_available(provider):
-            return provider == "openai"
-
-        with patch('src.main.check_provider_available', side_effect=check_available):
-            with patch('src.main.create_client', return_value=mock_client):
-                with patch('src.main.EnhancedAgent'):
+        with patch('src.initialization.setup.check_provider_available', return_value=True):
+            with patch('src.initialization.setup.create_client', return_value=mock_client):
+                with patch('src.initialization.setup.EnhancedAgent'):
                     agent = await initialize_agent(config, None)
                     assert agent is not None
 
@@ -402,7 +441,14 @@ class TestInitializeAgent:
         """Test initialize_agent initializes MCP client"""
         config = {
             "model": {
-                "ANTHROPIC_API_KEY": "test-key",
+                "provider": "anthropic"
+            },
+            "providers": {
+                "anthropic": {
+                    "api_key": "test-key",
+                    "model_name": "claude-opus",
+                    "api_base": "https://api.anthropic.com/v1"
+                }
             },
             "mcp_servers": [
                 {
@@ -415,10 +461,10 @@ class TestInitializeAgent:
         }
         mock_client = Mock()
         mock_client.context_window = 8000
-        with patch('src.main.check_provider_available', return_value=True):
-            with patch('src.main.create_client', return_value=mock_client):
-                with patch('src.main.MCPClient'):
-                    with patch('src.main.EnhancedAgent'):
+        with patch('src.initialization.setup.check_provider_available', return_value=True):
+            with patch('src.initialization.setup.create_client', return_value=mock_client):
+                with patch('src.initialization.setup.MCPClient'):
+                    with patch('src.initialization.setup.EnhancedAgent'):
                         agent = await initialize_agent(config, None)
                         assert agent is not None
 
@@ -430,7 +476,7 @@ class TestCLI:
     def test_cli_entry_point(self):
         """Test cli function entry point"""
         with patch('asyncio.run'):
-            with patch('src.main.main'):
+            with patch('src.cli.main.main'):
                 cli()
 
     def test_cli_keyboard_interrupt_handling(self):
@@ -461,7 +507,7 @@ class TestConfigLoading:
         test_config = {"model": {"temperature": "0.7"}}
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {"TEMPERATURE": "0.8"}):
-                with patch('src.main.load_dotenv'):
+                with patch('src.config.loader.load_dotenv'):
                     config = load_config("~/.tiny-claude-code/settings.json")
                     assert isinstance(config, dict)
 
@@ -469,7 +515,7 @@ class TestConfigLoading:
         """Test config properly converts max_tokens to int"""
         with patch('pathlib.Path.exists', return_value=False):
             with patch.dict(os.environ, {"MAX_TOKENS": "2000"}):
-                with patch('src.main.load_dotenv'):
+                with patch('src.config.loader.load_dotenv'):
                     config = load_config("~/.tiny-claude-code/settings.json")
                     assert isinstance(config, dict)
 

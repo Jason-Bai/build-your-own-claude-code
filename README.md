@@ -11,7 +11,7 @@ A production-ready, feature-complete AI coding assistant implementation that dem
 - **Complete Tool System** - 7 built-in tools + MCP integration support
 - **Advanced Agent Architecture** - State management, context management, permission controls
 - **Event-Driven Feedback** - Real-time event streams, Hook system, extensible architecture
-- **Multi-Model Support** - Anthropic Claude (verified), OpenAI, Google Gemini
+- **Multi-Model Support** - Anthropic Claude (verified ✅), OpenAI
 - **Conversation Persistence** - Save/load conversations, auto-save support
 - **Rich CLI Commands** - 10+ command system, conversation management, workflow support
 
@@ -78,7 +78,7 @@ pytest tests/unit/ --cov=src --cov-report=html
 ### Test Coverage
 
 - **Agent System**: 97+ tests (state management, context, feedback, permission)
-- **LLM Clients**: 35+ tests (Anthropic, OpenAI, Google, factory)
+- **LLM Clients**: 30+ tests (Anthropic, OpenAI, factory)
 - **Tool System**: 40+ tests (executor, file ops, bash, search, todo)
 - **Hook System**: 70+ tests (types, manager, builder, validator, config loader)
 - **Commands**: 60+ tests (builtin commands, persistence, workspace)
