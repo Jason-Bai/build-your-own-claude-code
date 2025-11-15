@@ -538,7 +538,13 @@ async def main():
     # Create CLI context
     cli_context = CLIContext(agent, config={})
 
-    # ... existing welcome message ...
+    # Print welcome message
+    OutputFormatter.print_separator()
+    OutputFormatter.info("🤖 Tiny Claude Code v1.0")
+    OutputFormatter.info(f"📚 Model: {client.model_name}")
+    OutputFormatter.info("💡 Type /help for available commands")
+    OutputFormatter.info("✨ Type 'exit' or /exit to quit")
+    OutputFormatter.print_separator()
 
     # Main loop
     try:
