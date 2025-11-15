@@ -108,6 +108,7 @@ class PromptInputManager:
             '/conversations': None,
             '/delete': None,
             '/clear': None,
+            '/checkpoint': None,
             '/init': None,
             '/quiet': None,
             '/exit': None,
