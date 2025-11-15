@@ -41,10 +41,11 @@ This document describes the complete architecture design of the Build Your Own C
     └────┬────┘                  │
          │              ┌─────────┼──────────────┐
          │              │         │              │
-    ┌────▼─────┐  ┌─────▼────┐ ┌▼──────────┐ ┌─▼────────┐
-    │Anthropic │  │Built-in  │ │    MCP    │ │Commands  │
-    │  Client  │  │  Tools   │ │  Adapter  │ │  System  │
-    └──────────┘  └──────────┘ └───┬───────┘ └──────────┘
+    ┌────▼──────┐  ┌─────▼────┐ ┌▼──────────┐ ┌─▼────────┐
+    │Anthropic  │  │Built-in  │ │    MCP    │ │Commands  │
+    │OpenAI     │  │  Tools   │ │  Adapter  │ │  System  │
+    │Kimi       │  └──────────┘ └───┬───────┘ └──────────┘
+    └───────────┘                   │
                                     │
                           ┌─────────┼──────────┐
                           │         │          │
@@ -58,7 +59,7 @@ This document describes the complete architecture design of the Build Your Own C
 
 - **CLI Interface**: User interaction layer handling input/output and command parsing
 - **Enhanced Agent**: Core control layer integrating three major managers
-- **Client Layer**: LLM client abstraction layer supporting multiple models
+- **Client Layer**: LLM client abstraction layer supporting multiple models (Anthropic Claude, OpenAI, Moonshot Kimi)
 - **Tool Ecosystem**: Tool ecosystem system including built-in tools, MCP tools, and command system
 
 ---
@@ -339,7 +340,10 @@ src/
 │
 ├── clients/                # 🌐 LLM Client Layer
 │   ├── base.py             # Abstract Interface
-│   └── anthropic.py        # Anthropic Implementation
+│   ├── anthropic.py        # Anthropic Implementation
+│   ├── openai.py           # OpenAI Implementation
+│   ├── kimi.py             # Moonshot Kimi Implementation
+│   └── factory.py          # Client Factory
 │
 ├── tools/                  # 🛠️ Tool Layer
 │   ├── base.py             # Tool Base Class
@@ -432,10 +436,10 @@ src/
 ```python
 from src.clients.base import BaseClient, ModelResponse
 
-class OpenAIClient(BaseClient):
+class NewLLMClient(BaseClient):
     async def create_message(self, system, messages, tools, **kwargs):
-        # Implement OpenAI API call
-        response = await openai.chat.completions.create(...)
+        # Implement your LLM API call
+        response = await your_llm.chat.completions.create(...)
         return ModelResponse(...)
 
     async def generate_summary(self, prompt):
@@ -444,12 +448,21 @@ class OpenAIClient(BaseClient):
 
     @property
     def model_name(self):
-        return "gpt-4"
+        return "your-model-name"
 
     @property
     def context_window(self):
         return 128000
+
+    @property
+    def provider_name(self):
+        return "your_provider"
 ```
+
+**Supported Providers:**
+- ✅ Anthropic Claude (claude-sonnet-4.5)
+- ✅ OpenAI (gpt-4o, gpt-4-turbo)
+- ✅ Moonshot Kimi (kimi-k2-thinking)
 
 #### Adding a New Tool
 

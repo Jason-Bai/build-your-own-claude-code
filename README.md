@@ -11,7 +11,7 @@ A production-ready, feature-complete AI coding assistant implementation that dem
 - **Complete Tool System** - 7 built-in tools + MCP integration support
 - **Advanced Agent Architecture** - State management, context management, permission controls
 - **Event-Driven Feedback** - Real-time event streams, Hook system, extensible architecture
-- **Multi-Model Support** - Anthropic Claude (verified ✅), OpenAI
+- **Multi-Model Support** - Anthropic Claude ✅, OpenAI ✅, Moonshot Kimi ✅
 - **Conversation Persistence** - Save/load conversations, auto-save support
 - **Rich CLI Commands** - 10+ command system, conversation management, workflow support
 
@@ -28,8 +28,17 @@ pip install -r requirements.txt
 **Method 1: Environment Variables (Recommended)**
 
 ```bash
+# For Anthropic Claude
 export ANTHROPIC_API_KEY="your-anthropic-key"
 export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
+
+# For OpenAI
+export OPENAI_API_KEY="your-openai-key"
+export OPENAI_MODEL="gpt-4"  # Optional
+
+# For Moonshot Kimi
+export KIMI_API_KEY="your-kimi-key"
+export KIMI_MODEL="kimi-k2-thinking"  # Optional
 ```
 
 **Method 2: .env File**
@@ -44,7 +53,23 @@ cp .env.example .env
 ```json
 {
   "model": {
-    "ANTHROPIC_API_KEY": "your-key"
+    "provider": "kimi",  // or "anthropic", "openai"
+    "temperature": 0.7,
+    "max_tokens": 4000
+  },
+  "providers": {
+    "anthropic": {
+      "api_key": "your-anthropic-key",
+      "model_name": "claude-sonnet-4.5"
+    },
+    "openai": {
+      "api_key": "your-openai-key",
+      "model_name": "gpt-4o"
+    },
+    "kimi": {
+      "api_key": "your-kimi-key",
+      "model_name": "kimi-k2-thinking"
+    }
   }
 }
 ```
@@ -78,7 +103,7 @@ pytest tests/unit/ --cov=src --cov-report=html
 ### Test Coverage
 
 - **Agent System**: 97+ tests (state management, context, feedback, permission)
-- **LLM Clients**: 30+ tests (Anthropic, OpenAI, factory)
+- **LLM Clients**: 30+ tests (Anthropic, OpenAI, Kimi, factory)
 - **Tool System**: 40+ tests (executor, file ops, bash, search, todo)
 - **Hook System**: 70+ tests (types, manager, builder, validator, config loader)
 - **Commands**: 60+ tests (builtin commands, persistence, workspace)

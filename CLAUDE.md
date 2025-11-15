@@ -13,7 +13,7 @@ A production-ready AI coding assistant implementation inspired by Anthropic's Cl
 ### Core Components
 
 - **Agent System** (`src/agents/`) - FSM-based state machine (IDLE → THINKING → USING_TOOL → COMPLETED)
-- **LLM Clients** (`src/clients/`) - Multi-provider support (Anthropic, OpenAI)
+- **LLM Clients** (`src/clients/`) - Multi-provider support (Anthropic, OpenAI, Kimi)
 - **Tool System** (`src/tools/`) - 7 built-in tools + MCP integration
 - **Hook System** (`src/hooks/`) - Event-driven extensibility
 - **CLI Enhancement** - Prompt-Toolkit (input) + Rich (output)
@@ -39,8 +39,17 @@ pip install -r requirements.txt
 ### Configure API Key
 
 ```bash
+# For Anthropic Claude
 export ANTHROPIC_API_KEY="your-key"
 export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
+
+# For OpenAI
+export OPENAI_API_KEY="your-key"
+export OPENAI_MODEL="gpt-4o"  # Optional
+
+# For Moonshot Kimi
+export KIMI_API_KEY="your-key"
+export KIMI_MODEL="kimi-k2-thinking"  # Optional
 ```
 
 ### Run
@@ -72,8 +81,23 @@ python -m src.main --quiet            # Minimal output
 ```json
 {
   "model": {
-    "provider": "anthropic",
-    "ANTHROPIC_API_KEY": "your-key"
+    "provider": "kimi",
+    "temperature": 0.7,
+    "max_tokens": 4000
+  },
+  "providers": {
+    "anthropic": {
+      "api_key": "your-anthropic-key",
+      "model_name": "claude-sonnet-4.5"
+    },
+    "openai": {
+      "api_key": "your-openai-key",
+      "model_name": "gpt-4o"
+    },
+    "kimi": {
+      "api_key": "your-kimi-key",
+      "model_name": "kimi-k2-thinking"
+    }
   },
   "mcp_servers": [
     {
@@ -142,7 +166,7 @@ Define in `~/.tiny-claude/settings.json`:
 ### Technology Stack
 
 - **Python 3.10+** - Language
-- **Anthropic Claude API** - Primary LLM (fully verified)
+- **LLM Providers** - Anthropic Claude ✅, OpenAI ✅, Moonshot Kimi ✅
 - **Pydantic 2.0+** - Data validation
 - **Rich 13.0+** - Terminal output
 - **Prompt-Toolkit 3.0+** - CLI input
@@ -181,10 +205,11 @@ class MyClient(BaseClient):
 
 | Issue            | Solution                                       |
 | ---------------- | ---------------------------------------------- |
-| No API provider  | Set `ANTHROPIC_API_KEY` env var or ~/.tiny-claude-code/settings.json |
+| No API provider  | Set API key env var or ~/.tiny-claude-code/settings.json (see config examples above) |
 | MCP not loading  | Verify: `pip install mcp`, check config        |
 | Context exceeded | Use `/clear` to reset conversation             |
 | Tool fails       | Check permissions, verify parameters           |
+| Kimi tool calling | Ensure using latest version with provider-specific message handling |
 
 For detailed issues: [docs/troubleshooting_guide.md](./docs/troubleshooting_guide.md)
 
@@ -205,7 +230,7 @@ For detailed issues: [docs/troubleshooting_guide.md](./docs/troubleshooting_guid
 
 **Production Ready** - Core functionality complete, continuously optimized.
 
-**Last Updated:** 2025-01-13
+**Last Updated:** 2025-01-15
 
 **License:** MIT
 

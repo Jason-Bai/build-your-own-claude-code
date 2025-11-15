@@ -11,7 +11,7 @@
 - **完整工具系统** - 7 个内置工具 + MCP 集成支持
 - **先进 Agent 架构** - 状态管理、上下文管理、权限控制
 - **事件驱动反馈** - 实时事件流、Hook 系统、可扩展架构
-- **多模型支持** - Anthropic Claude (已验证)、OpenAI、Google Gemini
+- **多模型支持** - Anthropic Claude ✅、OpenAI ✅、Moonshot Kimi ✅
 - **对话持久化** - 保存/加载对话、自动保存支持
 - **丰富 CLI 命令** - 10+ 命令系统、对话管理、工作流支持
 
@@ -28,8 +28,17 @@ pip install -r requirements.txt
 **方法 1：环境变量（推荐）**
 
 ```bash
+# Anthropic Claude
 export ANTHROPIC_API_KEY="your-anthropic-key"
 export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # 可选
+
+# OpenAI
+export OPENAI_API_KEY="your-openai-key"
+export OPENAI_MODEL="gpt-4"  # 可选
+
+# Moonshot Kimi
+export KIMI_API_KEY="your-kimi-key"
+export KIMI_MODEL="kimi-k2-thinking"  # 可选
 ```
 
 **方法 2：.env 文件**
@@ -44,7 +53,23 @@ cp .env.example .env
 ```json
 {
   "model": {
-    "ANTHROPIC_API_KEY": "your-key"
+    "provider": "kimi",  // 或 "anthropic", "openai"
+    "temperature": 0.7,
+    "max_tokens": 4000
+  },
+  "providers": {
+    "anthropic": {
+      "api_key": "your-anthropic-key",
+      "model_name": "claude-sonnet-4.5"
+    },
+    "openai": {
+      "api_key": "your-openai-key",
+      "model_name": "gpt-4o"
+    },
+    "kimi": {
+      "api_key": "your-kimi-key",
+      "model_name": "kimi-k2-thinking"
+    }
   }
 }
 ```
@@ -78,7 +103,7 @@ pytest tests/unit/ --cov=src --cov-report=html
 ### 测试覆盖
 
 - **Agent 系统**: 97+ 个测试（状态管理、上下文、反馈、权限）
-- **LLM 客户端**: 35+ 个测试（Anthropic、OpenAI、Google、工厂）
+- **LLM 客户端**: 35+ 个测试（Anthropic、OpenAI、Kimi、工厂）
 - **工具系统**: 40+ 个测试（执行器、文件操作、bash、搜索、todo）
 - **Hook 系统**: 70+ 个测试（类型、管理器、构建器、验证器、配置加载）
 - **命令系统**: 60+ 个测试（内置命令、持久化、工作区）

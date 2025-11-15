@@ -11,9 +11,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Planned
 - Phase 4: Advanced Agent Capabilities (In Progress)
-- Enhanced Multi-Model Support
 - Performance Optimization and Token Compression
 - Additional MCP Server Integration
+
+---
+
+## [1.1.0] - 2025-01-15
+
+### Added
+- **Moonshot Kimi Provider Support** ✅
+  - Full Kimi API integration with tool calling support
+  - Custom message formatting for Kimi's OpenAI-compatible API
+  - Provider-specific tool result handling
+  - Multi-turn conversation support verified
+
+### Fixed
+- **Kimi Tool Calling Issue** ✅
+  - Fixed `tool_call_id is not found` error in multi-turn conversations
+  - Implemented provider-aware message formatting in context manager
+  - Added custom Kimi client with proper tool_use_id to tool_call_id conversion
+  - 1055+ tests passing with Kimi integration
+
+**Commits:**
+- `ee668e7` - fix: Resolve Kimi tool calling failure by implementing provider-specific message handling
 
 ---
 
