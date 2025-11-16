@@ -47,3 +47,22 @@ class PersistenceManager:
 
     async def load_agent_state(self, agent_id: str) -> Optional[Dict]:
         return await self.storage.load("agent_state", agent_id)
+
+    # ========== Session Management APIs ==========
+
+    async def save_session(self, session_id: str, session_data: Dict) -> str:
+        """Save a session to persistent storage"""
+        return await self.storage.save(category="session", key=session_id, data=session_data)
+
+    async def load_session(self, session_id: str) -> Optional[Dict]:
+        """Load a session from persistent storage"""
+        return await self.storage.load("session", session_id)
+
+    async def list_sessions(self) -> List[str]:
+        """List all session IDs"""
+        return await self.storage.list("session")
+
+    async def delete_session(self, session_id: str) -> bool:
+        """Delete a session from persistent storage"""
+        return await self.storage.delete("session", session_id)
+

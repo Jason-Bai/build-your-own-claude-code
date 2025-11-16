@@ -58,6 +58,31 @@ class StepRecord:
     error: Optional[str] = None
     duration: Optional[float] = None
 
+    def to_dict(self) -> Dict:
+        return {
+            "execution_id": self.execution_id,
+            "step_name": self.step_name,
+            "step_index": self.step_index,
+            "status": self.status,
+            "timestamp": self.timestamp.isoformat(),
+            "result": self.result,
+            "error": self.error,
+            "duration": self.duration,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "StepRecord":
+        return cls(
+            execution_id=data["execution_id"],
+            step_name=data["step_name"],
+            step_index=data["step_index"],
+            status=data["status"],
+            timestamp=datetime.fromisoformat(data["timestamp"]),
+            result=data.get("result"),
+            error=data.get("error"),
+            duration=data.get("duration"),
+        )
+
 @dataclass
 class ExecutionHistory:
     execution_id: str
@@ -69,6 +94,33 @@ class ExecutionHistory:
     status: str = "pending"
     recovery_attempts: int = 0
     last_checkpoint: Optional[Checkpoint] = None
+
+    def to_dict(self) -> Dict:
+        return {
+            "execution_id": self.execution_id,
+            "start_time": self.start_time.isoformat(),
+            "end_time": self.end_time.isoformat() if self.end_time else None,
+            "steps": [s.to_dict() for s in self.steps],
+            "checkpoints": [c.to_dict() for c in self.checkpoints],
+            "total_duration": self.total_duration,
+            "status": self.status,
+            "recovery_attempts": self.recovery_attempts,
+            "last_checkpoint": self.last_checkpoint.to_dict() if self.last_checkpoint else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> "ExecutionHistory":
+        return cls(
+            execution_id=data["execution_id"],
+            start_time=datetime.fromisoformat(data["start_time"]),
+            end_time=datetime.fromisoformat(data["end_time"]) if data.get("end_time") else None,
+            steps=[StepRecord.from_dict(s) for s in data.get("steps", [])],
+            checkpoints=[Checkpoint.from_dict(c) for c in data.get("checkpoints", [])],
+            total_duration=data.get("total_duration", 0.0),
+            status=data.get("status", "pending"),
+            recovery_attempts=data.get("recovery_attempts", 0),
+            last_checkpoint=Checkpoint.from_dict(data["last_checkpoint"]) if data.get("last_checkpoint") else None,
+        )
 
 @dataclass
 class ExecutionResult:
