@@ -196,52 +196,54 @@ class TestSessionCommandRegistration:
         assert isinstance(command, Command)
 
 
-class TestMainWithSessionManager:
-    """Tests for main.py with SessionManager feature toggle"""
+class TestSessionManagerProduction:
+    """Tests for SessionManager in production mode (always enabled)"""
 
     @patch('src.cli.main.load_config')
     @patch('src.cli.main.initialize_agent')
     @patch('src.cli.main.register_builtin_commands')
     @patch('src.cli.main.get_input_manager')
-    def test_main_with_session_manager_disabled(
+    def test_session_manager_always_enabled(
         self, mock_get_input, mock_register, mock_init, mock_load_config
     ):
-        """Test main.py behavior with SessionManager disabled (default)"""
-        # Setup mocks
+        """Test that SessionManager is always enabled in production"""
+        # Setup mocks - config no longer has feature toggle
         mock_load_config.return_value = {
-            "features": {"session_manager": False},
             "model": {"provider": "test"}
         }
 
         mock_agent = MagicMock()
-        mock_agent.session_manager = None
+        mock_session_manager = MagicMock()
+        mock_agent.session_manager = mock_session_manager
         mock_agent.mcp_client = None
         mock_init.return_value = mock_agent
 
         mock_input = MagicMock()
         mock_input.async_get_input = AsyncMock(side_effect=[KeyboardInterrupt()])
+        mock_input.history = None
         mock_get_input.return_value = mock_input
 
-        # The feature toggle should be disabled by default
-        assert not mock_load_config()["features"].get("session_manager", False)
+        # Verify SessionManager is always created
+        assert mock_agent.session_manager is not None
 
-    @patch('src.cli.main.load_config')
-    @patch('src.cli.main.initialize_agent')
-    @patch('src.cli.main.register_builtin_commands')
-    @patch('src.cli.main.get_input_manager')
-    def test_main_with_session_manager_enabled(
-        self, mock_get_input, mock_register, mock_init, mock_load_config
-    ):
-        """Test main.py behavior with SessionManager enabled"""
-        # Setup mocks with session manager enabled
+    def test_session_manager_no_feature_toggle(self):
+        """Test that config no longer requires features.session_manager toggle"""
+        # Production config should not have feature toggle
         config = {
-            "features": {"session_manager": True},
-            "model": {"provider": "test"}
+            "model": {"provider": "test"},
+            "persistence": {"storage_type": "json"}
         }
-        mock_load_config.return_value = config
 
-        # Verify the feature toggle can be enabled
-        assert config["features"].get("session_manager", False)
+        # Feature toggle key should not be present
+        assert "features" not in config
+
+        # SessionManager should be used by default
+        persistence = MockPersistenceManager()
+        session_manager = SessionManager(persistence)
+
+        session = session_manager.start_session("test-project")
+        assert session is not None
+        assert session.project_name == "test-project"
 
 
 class TestSessionDataRoundtrip:

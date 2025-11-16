@@ -21,6 +21,5 @@
     "base_dir": "~/.cache/tiny-claude-code"
   },
   "mcp_servers": [],
-  "auto_save": false,
   "max_turns": 20
 }
