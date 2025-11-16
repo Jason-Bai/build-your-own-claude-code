@@ -15,6 +15,7 @@ from ..hooks import HookManager, HookEvent, HookConfigLoader
 from ..events import EventBus, EventType, Event
 from ..persistence.manager import PersistenceManager
 from ..persistence.storage import JSONStorage, SQLiteStorage, BaseStorage
+from ..sessions.manager import SessionManager
 
 def create_storage_from_config(config: dict) -> BaseStorage:
     storage_config = config.get("persistence", {})
@@ -111,6 +112,10 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
         ReadTool(), WriteTool(), EditTool(), BashTool(), GlobTool(), GrepTool(),
         TodoWriteTool(agent.todo_manager)
     ])
+
+    # Initialize SessionManager for session management
+    session_manager = SessionManager(persistence_manager)
+    agent.session_manager = session_manager
 
     return agent
 

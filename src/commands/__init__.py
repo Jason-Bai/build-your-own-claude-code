@@ -17,6 +17,9 @@ from .persistence_commands import (
 from .checkpoint_commands import (
     CheckpointCommand
 )
+from .session_commands import (
+    SessionCommand
+)
 from .workspace_commands import (
     InitCommand,
     ShowContextCommand,
@@ -41,6 +44,8 @@ def register_builtin_commands():
     command_registry.register(DeleteConversationCommand())
     # Checkpoint commands
     command_registry.register(CheckpointCommand())
+    # Session commands
+    command_registry.register(SessionCommand())
     # Workspace commands
     command_registry.register(InitCommand())
     command_registry.register(ShowContextCommand())

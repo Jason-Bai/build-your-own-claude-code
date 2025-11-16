@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
 
 from ..commands import CLIContext, command_registry, register_builtin_commands
@@ -64,6 +65,27 @@ async def main():
     # Initialize input manager with command registry (dependency injection)
     input_manager = get_input_manager()
 
+    # Feature Toggle: Check if SessionManager is enabled
+    use_session_manager = config.get("features", {}).get("session_manager", False)
+    session_manager = None
+
+    if use_session_manager:
+        session_manager = agent.session_manager
+        project_name = Path.cwd().name
+        session = session_manager.start_session(project_name)
+        OutputFormatter.info(f"📝 Session started: {session.session_id}")
+
+        # Sync existing command history to session (if any)
+        if input_manager.history:
+            try:
+                existing_commands = list(input_manager.history.get_strings())
+                for cmd in existing_commands:
+                    session_manager.record_command(cmd)
+                if existing_commands:
+                    OutputFormatter.info(f"📚 Loaded {len(existing_commands)} existing commands")
+            except Exception:
+                pass
+
     # Main REPL loop
     is_first_iteration = True
     try:
@@ -80,10 +102,16 @@ async def main():
 
                 # Check if it's a command
                 if command_registry.is_command(user_input):
+                    if use_session_manager and session_manager:
+                        session_manager.record_command(user_input)
                     result = await command_registry.execute(user_input, cli_context)
                     if result:
                         OutputFormatter.print_assistant_response(result)
                     continue
+
+                # Record user input in session
+                if use_session_manager and session_manager:
+                    session_manager.record_command(user_input)
 
                 # Otherwise, send to agent
                 OutputFormatter.print_separator()
@@ -101,8 +129,23 @@ async def main():
                         OutputFormatter.print_assistant_response(
                             final_response)
 
-                    # Auto-save (if enabled)
-                    if config.get("auto_save", False):
+                    # Record conversation in session
+                    if use_session_manager and session_manager:
+                        session_manager.record_message({
+                            "role": "user",
+                            "content": user_input,
+                            "timestamp": datetime.now().isoformat()
+                        })
+                        session_manager.record_message({
+                            "role": "assistant",
+                            "content": final_response,
+                            "timestamp": datetime.now().isoformat()
+                        })
+                        # Save session after each interaction
+                        await session_manager.save_session_async()
+
+                    # Auto-save (if enabled, for legacy system)
+                    if config.get("auto_save", False) and not use_session_manager:
                         stats = result.get("agent_state", {})
                         conversation_id = f"conv-auto-save-{Path.cwd().name}-{os.getpid()}"
                         await agent.persistence.save_conversation(
@@ -127,6 +170,14 @@ async def main():
                 OutputFormatter.info("Type /clear to reset if needed")
 
     finally:
+        # End session if SessionManager is enabled
+        if use_session_manager and session_manager:
+            try:
+                session_manager.end_session()
+                OutputFormatter.info("📝 Session saved and closed")
+            except Exception as e:
+                OutputFormatter.warning(f"Failed to save session: {e}")
+
         # Clean up MCP connections
         if agent.mcp_client:
             OutputFormatter.info("Disconnecting MCP servers...")

@@ -28,11 +28,12 @@ class SessionManager:
                 self.current_session.status = "active"
                 return self.current_session
 
-        # Create new session
+        # Create new session with microsecond precision for uniqueness
+        now = datetime.now()
         self.current_session = Session(
-            session_id=f"session-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+            session_id=f"session-{now.strftime('%Y%m%d%H%M%S')}-{now.microsecond}",
             project_name=project_name,
-            start_time=datetime.now()
+            start_time=now
         )
         return self.current_session
 
@@ -120,6 +121,13 @@ class SessionManager:
         except RuntimeError:
             pass
         return []
+
+    async def list_all_sessions_async(self) -> List[str]:
+        """Asynchronously list all session IDs"""
+        try:
+            return await self.persistence.list_sessions()
+        except Exception:
+            return []
 
     # ========== Persistence Methods ==========
 
