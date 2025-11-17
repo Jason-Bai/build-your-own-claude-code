@@ -11,7 +11,7 @@ A production-ready, feature-complete AI coding assistant implementation that dem
 - **Complete Tool System** - 7 built-in tools + MCP integration support
 - **Advanced Agent Architecture** - State management, context management, permission controls
 - **Event-Driven Feedback** - Real-time event streams, Hook system, extensible architecture
-- **Multi-Model Support** - Anthropic Claude ✅, OpenAI ✅
+- **Multi-Model Support** - Anthropic Claude ✅, OpenAI ✅, Moonshot Kimi ✅
 - **Session Management** - Automatic session persistence, command history tracking, session restoration
 - **Rich CLI Commands** - 10+ command system, conversation management, workflow support
 
@@ -79,7 +79,22 @@ cp .env.example .env
 
 **Configuration Priority:** Environment Variables > .env File > settings.json
 
-**Note:** The system also supports OpenAI-compatible APIs by configuring the `api_base` parameter in the OpenAI provider settings.
+**Using OpenAI-Compatible APIs (Moonshot Kimi Example):**
+
+```json
+{
+  "model": {
+    "provider": "openai"
+  },
+  "providers": {
+    "openai": {
+      "api_key": "your-kimi-api-key",
+      "model_name": "moonshot-v1-8k",
+      "api_base": "https://api.moonshot.cn/v1"
+    }
+  }
+}
+```
 
 ### 3. Run the Application
 

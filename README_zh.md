@@ -11,7 +11,7 @@
 - **完整工具系统** - 7 个内置工具 + MCP 集成支持
 - **先进 Agent 架构** - 状态管理、上下文管理、权限控制
 - **事件驱动反馈** - 实时事件流、Hook 系统、可扩展架构
-- **多模型支持** - Anthropic Claude ✅、OpenAI ✅
+- **多模型支持** - Anthropic Claude ✅、OpenAI ✅、Moonshot Kimi ✅
 - **会话管理系统** - 自动会话持久化、命令历史跟踪、会话恢复
 - **丰富 CLI 命令** - 10+ 命令系统、对话管理、工作流支持
 
@@ -79,7 +79,22 @@ cp .env.example .env
 
 **配置优先级：** 环境变量 > .env 文件 > settings.json
 
-**注意：** 系统也支持 OpenAI 兼容的 API，只需在 OpenAI provider 设置中配置 `api_base` 参数即可。
+**使用 OpenAI 兼容 API（Moonshot Kimi 示例）：**
+
+```json
+{
+  "model": {
+    "provider": "openai"
+  },
+  "providers": {
+    "openai": {
+      "api_key": "your-kimi-api-key",
+      "model_name": "moonshot-v1-8k",
+      "api_base": "https://api.moonshot.cn/v1"
+    }
+  }
+}
+```
 
 ### 3. 运行应用
 
