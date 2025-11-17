@@ -1,293 +1,124 @@
-# Testing Quick Start Guide
+# Testing Quick Reference
 
-Get started with testing in under 5 minutes.
+**Quick access to testing documentation and common commands.**
 
-## 🚀 Quick Start
+---
 
-### 1. Install Dependencies
+## Quick Stats
 
-```bash
-pip install pytest pytest-asyncio pytest-cov pytest-timeout
-```
+- **Total Tests:** 1,113 (99.6% passing)
+- **Coverage:** 66.0%
+- **Test Files:** 36
+- **Execution Time:** ~10 seconds
 
-### 2. Run All Tests
+---
 
-```bash
-pytest tests/unit/ -v
-```
-
-Expected output: **359 passed** ✅
-
-### 3. View Coverage Report
+## Common Commands
 
 ```bash
-pytest tests/unit/ --cov=src --cov-report=html
-open htmlcov/index.html  # macOS
+# Run all tests
+pytest tests/ -v
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=html
+open htmlcov/index.html
+
+# Run specific module
+pytest tests/unit/test_agent_state.py -v
+
+# Run failed tests only
+pytest tests/ --lf
+
+# Run tests matching pattern
+pytest tests/ -k "session" -v
+
+# Stop on first failure
+pytest tests/ -x
 ```
 
 ---
 
-## 📋 Common Commands
-
-| Command                                  | Description                |
-| ---------------------------------------- | -------------------------- |
-| `pytest tests/unit/`                     | Run all unit tests         |
-| `pytest tests/unit/ -v`                  | Verbose output             |
-| `pytest tests/unit/ -x`                  | Stop on first failure      |
-| `pytest tests/unit/ --cov=src`           | Show coverage              |
-| `pytest tests/unit/test_hook_manager.py` | Run specific file          |
-| `pytest -k "test_agent"`                 | Run tests matching pattern |
-
----
-
-## ✍️ Writing Your First Test
-
-### Step 1: Create Test File
-
-Create `tests/unit/test_my_module.py`:
-
-```python
-import pytest
-from src.my_module import MyClass
-
-@pytest.mark.unit
-class TestMyClass:
-    """Tests for MyClass"""
-
-    def test_initialization(self):
-        """Test MyClass initialization"""
-        obj = MyClass(param="value")
-        assert obj.param == "value"
-
-    @pytest.mark.asyncio
-    async def test_async_method(self):
-        """Test async method"""
-        obj = MyClass()
-        result = await obj.async_method()
-        assert result is not None
-```
-
-### Step 2: Run Your Test
-
-```bash
-pytest tests/unit/test_my_module.py -v
-```
-
----
-
-## 🔧 Using Fixtures
-
-Over 30+ reusable fixtures available in `tests/conftest.py`:
-
-```python
-@pytest.mark.unit
-class TestWithFixtures:
-    """Example using fixtures"""
-
-    def test_with_mock_agent(self, mock_agent_state):
-        """Use pre-configured mock agent"""
-        assert mock_agent_state.status == "IDLE"
-
-    def test_with_sample_data(self, sample_messages):
-        """Use sample conversation data"""
-        assert len(sample_messages) == 3
-
-    def test_with_temp_dir(self, temp_test_dir):
-        """Use temporary directory"""
-        test_file = temp_test_dir / "test.txt"
-        test_file.write_text("content")
-        assert test_file.exists()
-```
-
-### Available Fixtures
-
-**Mock Objects:**
-
-- `mock_agent_state` - Agent state machine
-- `mock_context_manager` - Context manager
-- `mock_tool_manager` - Tool manager
-- `mock_llm_client` - LLM client
-
-**Sample Data:**
-
-- `sample_messages` - Conversation messages
-- `sample_agent_config` - Agent configuration
-- `sample_tools` - Tool collections
-
-**File Operations:**
-
-- `temp_test_dir` - Temporary directory
-- `sample_python_file` - Python file example
-
-See `tests/conftest.py` for complete list.
-
----
-
-## 🐛 Debugging Tests
-
-### Show Print Output
-
-```bash
-pytest -s tests/unit/test_my.py
-```
-
-### Verbose Failures
-
-```bash
-pytest -vv tests/unit/test_my.py
-```
-
-### Use Debugger
-
-```python
-def test_with_debugger():
-    x = 10
-    import pdb; pdb.set_trace()  # Pause here
-    assert x == 10
-```
-
-### Skip Tests
-
-```python
-@pytest.mark.skip(reason="Not implemented yet")
-def test_future_feature():
-    pass
-
-@pytest.mark.xfail
-def test_known_bug():
-    # Expected to fail
-    pass
-```
-
----
-
-## 📊 Test Organization
-
-Current test structure:
+## Test Structure
 
 ```
 tests/
-├── conftest.py           # Shared fixtures (30+)
-├── pytest.ini            # Pytest configuration
-└── unit/                 # 359 unit tests
-    ├── test_agent_state.py              (53 tests)
-    ├── test_agent_context.py            (63 tests)
-    ├── test_agent_tool_manager.py       (38 tests)
-    ├── test_agent_permission_manager.py (39 tests)
-    ├── test_llm_clients.py              (42 tests)
-    ├── test_tool_system.py              (47 tests)
-    ├── test_hooks_types.py              (24 tests)
-    └── test_hook_manager.py             (39 tests)
+├── unit/              # 31 files, ~819 tests - Unit tests
+├── test_sessions/     # 4 files, 53 tests - Session Manager (P8)
+├── integration/       # 1 file, ~241 tests - Integration tests
+└── fixtures/          # Test fixtures and mocks
 ```
 
 ---
 
-## 💡 Best Practices
+## Coverage Targets
 
-### 1. Test Structure
+| Priority | Target | Current |
+|----------|--------|---------|
+| Overall | >65% | 66.0% ✅ |
+| Critical modules | >80% | 85%+ ✅ |
+| New features | >70% | Enforce in PR |
+
+---
+
+## Writing Tests
+
+### Test Template
 
 ```python
+import pytest
+
 class TestMyFeature:
-    """Group related tests"""
+    def test_basic_behavior(self):
+        # Arrange
+        obj = MyClass()
 
-    def test_successful_case(self):
-        """Test the happy path"""
-        pass
+        # Act
+        result = obj.method()
 
-    def test_error_handling(self):
-        """Test error scenarios"""
-        pass
+        # Assert
+        assert result.success
 
-    def test_edge_cases(self):
-        """Test boundary conditions"""
-        pass
+    async def test_async_behavior(self):
+        # Use async/await for async functions
+        result = await async_method()
+        assert result is not None
 ```
 
-### 2. Descriptive Names
+### Best Practices
 
-```python
-# Good
-def test_agent_transitions_from_idle_to_thinking():
-    pass
+1. ✅ Test one thing per test
+2. ✅ Use descriptive names
+3. ✅ Follow Arrange-Act-Assert
+4. ✅ Use fixtures for setup
+5. ❌ Don't test implementation details
+6. ❌ Don't write interdependent tests
 
-# Bad
-def test_agent():
-    pass
-```
+---
 
-### 3. Clear Assertions
+## CI/CD Integration
 
-```python
-# Good
-assert result.status == "COMPLETED"
-assert len(results) == 5
+```yaml
+# .github/workflows/test.yml
+- name: Run tests
+  run: pytest tests/ --cov=src --cov-report=xml
 
-# Bad
-assert result
-assert results
-```
-
-### 4. Use Markers
-
-```python
-@pytest.mark.unit          # Unit test
-@pytest.mark.asyncio       # Async test
-@pytest.mark.slow          # Slow running test
+- name: Check coverage
+  run: coverage report --fail-under=65
 ```
 
 ---
 
-## 🎯 Coverage Goals
+## Full Documentation
 
-Target coverage by module:
+📖 **[Complete Test Quality Report](./TEST_QUALITY_REPORT.md)**
 
-- **High Coverage (>80%)**: agents, clients, tools, hooks
-- **Good Coverage (60-80%)**: events, commands
-- **Basic Coverage (>50%)**: utils, prompts
-
-Current overall coverage: **34%**
-
----
-
-## 📚 Next Steps
-
-1. **Explore existing tests** - Read `tests/unit/test_hook_manager.py` for examples
-2. **Check coverage** - Run `pytest --cov=src --cov-report=html`
-3. **Write tests for new features** - Follow TDD approach
-4. **Read full summary** - See [summary.md](./summary.md)
+Detailed analysis including:
+- Module-by-module coverage breakdown
+- Test category deep dives
+- Recommendations for improvement
+- Testing best practices
+- CI/CD integration guide
 
 ---
 
-## ❓ Common Issues
-
-**Q: Tests fail with "import error"**
-
-```bash
-# Make sure you're in project root
-cd /path/to/build-your-own-claude-code
-pytest tests/unit/
-```
-
-**Q: Async tests don't work**
-
-```bash
-# Install pytest-asyncio
-pip install pytest-asyncio
-```
-
-**Q: How to run only fast tests?**
-
-```bash
-pytest -m "not slow" tests/unit/
-```
-
-**Q: How to see which tests are slow?**
-
-```bash
-pytest --durations=10 tests/unit/
-```
-
----
-
-**Last Updated**: 2025-01-14
-**Status**: 359 passing tests, 34% coverage ✅
+**Last Updated:** 2025-11-17
