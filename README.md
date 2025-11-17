@@ -25,50 +25,72 @@ pip install -r requirements.txt
 
 ### 2. Configure API Key
 
-**Method 1: Environment Variables (Recommended)**
+The system automatically creates `~/.tiny-claude-code/settings.json` on first run. Configure your API keys using any of these methods:
 
-```bash
-# For Anthropic Claude
-export ANTHROPIC_API_KEY="your-anthropic-key"
-export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
+**Method 1: Configuration File (Recommended)**
 
-# For OpenAI
-export OPENAI_API_KEY="your-openai-key"
-export OPENAI_MODEL="gpt-4"  # Optional
-
-# For Moonshot Kimi
-export KIMI_API_KEY="your-kimi-key"
-export KIMI_MODEL="kimi-k2-thinking"  # Optional
-```
-
-**Method 2: .env File**
-
-```bash
-cp .env.example .env
-# Edit .env file and add your API key
-```
-
-**Method 3: ~/.tiny-claude-code/settings.json**
+Edit `~/.tiny-claude-code/settings.json`:
 
 ```json
 {
   "model": {
-    "provider": "kimi",  // or "anthropic", "openai"
+    "provider": "openai",  // Choose: "anthropic", "openai", or use custom provider
     "temperature": 0.7,
     "max_tokens": 4000
   },
   "providers": {
     "anthropic": {
       "api_key": "your-anthropic-key",
-      "model_name": "claude-sonnet-4.5"
+      "model_name": "claude-sonnet-4-5-20250929",
+      "api_base": "https://api.anthropic.com/v1"
     },
     "openai": {
       "api_key": "your-openai-key",
-      "model_name": "gpt-4o"
-    },
-    "kimi": {
-      "api_key": "your-kimi-key",
-      "model_name": "kimi-k2-thinking"
+      "model_name": "gpt-4o",
+      "api_base": "https://api.openai.com/v1"
+    }
+  }
+}
+```
+
+**Method 2: Environment Variables (Override config file)**
+
+```bash
+# For Anthropic Claude
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
+export ANTHROPIC_API_BASE="https://api.anthropic.com/v1"  # Optional
+
+# For OpenAI (or OpenAI-compatible APIs like Moonshot Kimi)
+export OPENAI_API_KEY="your-openai-key"
+export OPENAI_MODEL="gpt-4o"  # Optional
+export OPENAI_API_BASE="https://api.openai.com/v1"  # Optional
+
+# Select which provider to use
+export MODEL_PROVIDER="openai"  # or "anthropic"
+```
+
+**Method 3: .env File (Local project configuration)**
+
+```bash
+cp .env.example .env
+# Edit .env file with your API keys
+```
+
+**Configuration Priority:** Environment Variables > .env File > settings.json
+
+**Using OpenAI-Compatible APIs (e.g., Moonshot Kimi):**
+
+```json
+{
+  "model": {
+    "provider": "openai"
+  },
+  "providers": {
+    "openai": {
+      "api_key": "your-kimi-api-key",
+      "model_name": "moonshot-v1-8k",
+      "api_base": "https://api.moonshot.cn/v1"
     }
   }
 }

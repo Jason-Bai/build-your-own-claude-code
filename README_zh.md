@@ -25,50 +25,72 @@ pip install -r requirements.txt
 
 ### 2. 配置 API Key
 
-**方法 1：环境变量（推荐）**
+系统首次运行时会自动创建 `~/.tiny-claude-code/settings.json`。使用以下任一方法配置 API Key：
 
-```bash
-# Anthropic Claude
-export ANTHROPIC_API_KEY="your-anthropic-key"
-export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # 可选
+**方法 1：配置文件（推荐）**
 
-# OpenAI
-export OPENAI_API_KEY="your-openai-key"
-export OPENAI_MODEL="gpt-4"  # 可选
-
-# Moonshot Kimi
-export KIMI_API_KEY="your-kimi-key"
-export KIMI_MODEL="kimi-k2-thinking"  # 可选
-```
-
-**方法 2：.env 文件**
-
-```bash
-cp .env.example .env
-# 编辑 .env 文件，添加你的 API key
-```
-
-**方法 3：~/.tiny-claude-code/settings.json**
+编辑 `~/.tiny-claude-code/settings.json`：
 
 ```json
 {
   "model": {
-    "provider": "kimi",  // 或 "anthropic", "openai"
+    "provider": "openai",  // 选择: "anthropic", "openai", 或使用自定义提供商
     "temperature": 0.7,
     "max_tokens": 4000
   },
   "providers": {
     "anthropic": {
       "api_key": "your-anthropic-key",
-      "model_name": "claude-sonnet-4.5"
+      "model_name": "claude-sonnet-4-5-20250929",
+      "api_base": "https://api.anthropic.com/v1"
     },
     "openai": {
       "api_key": "your-openai-key",
-      "model_name": "gpt-4o"
-    },
-    "kimi": {
-      "api_key": "your-kimi-key",
-      "model_name": "kimi-k2-thinking"
+      "model_name": "gpt-4o",
+      "api_base": "https://api.openai.com/v1"
+    }
+  }
+}
+```
+
+**方法 2：环境变量（覆盖配置文件）**
+
+```bash
+# Anthropic Claude
+export ANTHROPIC_API_KEY="your-anthropic-key"
+export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # 可选
+export ANTHROPIC_API_BASE="https://api.anthropic.com/v1"  # 可选
+
+# OpenAI（或 OpenAI 兼容 API，如 Moonshot Kimi）
+export OPENAI_API_KEY="your-openai-key"
+export OPENAI_MODEL="gpt-4o"  # 可选
+export OPENAI_API_BASE="https://api.openai.com/v1"  # 可选
+
+# 选择使用哪个提供商
+export MODEL_PROVIDER="openai"  # 或 "anthropic"
+```
+
+**方法 3：.env 文件（本地项目配置）**
+
+```bash
+cp .env.example .env
+# 编辑 .env 文件，添加你的 API key
+```
+
+**配置优先级：** 环境变量 > .env 文件 > settings.json
+
+**使用 OpenAI 兼容 API（例如 Moonshot Kimi）：**
+
+```json
+{
+  "model": {
+    "provider": "openai"
+  },
+  "providers": {
+    "openai": {
+      "api_key": "your-kimi-api-key",
+      "model_name": "moonshot-v1-8k",
+      "api_base": "https://api.moonshot.cn/v1"
     }
   }
 }
