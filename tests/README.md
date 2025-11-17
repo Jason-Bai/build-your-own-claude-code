@@ -36,31 +36,64 @@ pytest tests/ --cov=src --cov-report=html
 
 ## Test Structure
 
-After setup, you should have:
+The test suite is organized by test type for clarity and maintainability:
 
 ```
 tests/
-├── conftest.py                    # Shared fixtures and configuration
-├── pytest.ini                     # Pytest settings
+├── conftest.py                      # Shared fixtures and configuration
+├── pytest.ini                       # Pytest settings and markers
+├── README.md                        # This file
 ├── __init__.py
-├── unit/                          # Unit tests (to be added)
+│
+├── unit/                           # Unit tests (fast, use mocks)
 │   ├── __init__.py
-│   └── test_agent_state_example.py  # Example test file
-├── integration/                   # Integration tests (to be added)
+│   ├── test_agent_*.py             # Agent component tests
+│   ├── test_*_client.py            # LLM client tests
+│   ├── test_session_*.py           # Session management tests
+│   ├── test_web_search.py          # Web search unit tests
+│   └── ...                         # Other unit tests
+│
+├── integration/                    # Integration tests (real dependencies)
+│   ├── __init__.py
+│   └── test_web_search_integration.py  # Web search with real API
+│
+├── e2e/                           # End-to-end tests (full workflows)
 │   └── __init__.py
-├── e2e/                          # E2E tests (to be added)
-│   └── __init__.py
-├── fixtures/                      # Test data (to be added)
-│   └── __init__.py
-├── test_hooks.py                 # Existing test
-└── test_hooks_integration.py      # Existing test
+│
+└── fixtures/                      # Test data and fixtures
+    └── __init__.py
 ```
+
+**Test Type Guidelines:**
+
+- **Unit Tests** (`tests/unit/`): Fast tests using mocks, no external dependencies
+- **Integration Tests** (`tests/integration/`): Tests with real external services (network, databases)
+- **E2E Tests** (`tests/e2e/`): Complete workflow tests, slower but comprehensive
 
 ## Running Tests
 
 ### Run all tests
 ```bash
 pytest tests/
+```
+
+### Run only unit tests (fast)
+```bash
+pytest tests/unit/
+# or using marker:
+pytest -m unit
+```
+
+### Run only integration tests (requires network)
+```bash
+pytest tests/integration/
+# or using marker:
+pytest -m integration
+```
+
+### Skip integration tests (useful for offline work)
+```bash
+pytest -m "not integration"
 ```
 
 ### Run with coverage report
@@ -70,17 +103,7 @@ pytest --cov=src --cov-report=html tests/
 
 ### Run specific test file
 ```bash
-pytest tests/unit/test_agent_state_example.py
-```
-
-### Run only unit tests
-```bash
-pytest tests/unit/ -m unit
-```
-
-### Run only integration tests
-```bash
-pytest tests/integration/ -m integration
+pytest tests/unit/test_web_search.py
 ```
 
 ### Run with verbose output
@@ -93,9 +116,9 @@ pytest -v tests/
 pytest -x tests/
 ```
 
-### Run async tests only
+### Run only slow tests
 ```bash
-pytest -m asyncio tests/
+pytest -m slow tests/
 ```
 
 ## Available Fixtures
