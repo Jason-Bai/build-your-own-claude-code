@@ -6,7 +6,7 @@ from ..clients import create_client, check_provider_available
 from ..tools import (
     ReadTool, WriteTool, EditTool,
     BashTool, GlobTool, GrepTool,
-    TodoWriteTool
+    TodoWriteTool, WebSearchTool
 )
 from ..prompts import get_system_prompt
 from ..mcps import MCPClient, MCPServerConfig
@@ -110,7 +110,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
 
     agent.tool_manager.register_tools([
         ReadTool(), WriteTool(), EditTool(), BashTool(), GlobTool(), GrepTool(),
-        TodoWriteTool(agent.todo_manager)
+        TodoWriteTool(agent.todo_manager), WebSearchTool()
     ])
 
     # Initialize SessionManager for session management
