@@ -112,7 +112,7 @@ For detailed architecture design, data flow, Agent state machine and more:
 
 ## 🧪 Testing
 
-This project includes a comprehensive test suite with **1,160+ passing tests** and **68% code coverage**.
+This project includes a comprehensive test suite with **1,113 tests** (99.6% passing) and **66% code coverage**.
 
 ```bash
 # Run all tests
@@ -122,27 +122,42 @@ pytest tests/ -v
 pytest tests/ --cov=src --cov-report=html
 ```
 
-### Test Coverage
+### Test Coverage Summary
 
-- **Agent System**: 97+ tests (state management, context, feedback, permission)
-- **LLM Clients**: 30+ tests (Anthropic, OpenAI, Kimi, factory)
+- **Overall Coverage**: 66.0% (2,111 / 3,200 lines)
+- **Total Tests**: 1,113 tests in 36 files
+- **Pass Rate**: 99.6% (1,108 passing, 5 minor failures)
+- **Execution Time**: ~10 seconds
+
+### Test Distribution
+
+- **Agent System**: 97+ tests (state management, context, feedback, permissions)
+- **LLM Clients**: 35+ tests (Anthropic, OpenAI, base client, factory)
 - **Tool System**: 40+ tests (executor, file ops, bash, search, todo)
 - **Hook System**: 70+ tests (types, manager, builder, validator, config loader)
-- **Commands**: 60+ tests (builtin commands, persistence, workspace)
-- **Session Manager**: 61+ tests (unit, integration, performance verification)
-- **Other**: 800+ additional integration and edge case tests
+- **Commands**: 60+ tests (builtin, persistence, workspace, session)
+- **Session Manager**: 53 tests (unit, integration, performance - **100% passing**)
+- **Integration**: 241+ tests (cross-module workflows, end-to-end scenarios)
+- **Performance**: 12 benchmarks (throughput, latency, memory efficiency)
 
-### High Coverage Modules (>80%)
+### Coverage by Module
 
-- **95%+**: `hooks/manager.py`, `agents/context_manager.py`, `clients/base.py`
-- **85%+**: `tools/file_ops.py`, `tools/base.py`, `tools/bash.py`, `hooks/config_loader.py`
-- **100% coverage**: `agents/feedback.py`, `agents/state.py`, `commands/builtin.py`, `commands/persistence_commands.py`, `persistence.py`, `utils/output.py`
+| Module | Coverage | Status |
+|--------|----------|--------|
+| **utils, config, sessions, tools** | 84-90% | ✅ Excellent |
+| **hooks, initialization, persistence** | 65-78% | 🟢 Good |
+| **agents, clients, commands** | 46-66% | 🟡 Moderate |
+| **cli, events** | 15-40% | 🟠 Needs Work |
 
-For quick start guide and detailed documentation:
+### 100% Coverage Modules (27 files)
 
-👉 **[docs/testing/quickstart.md](./docs/testing/quickstart.md)** - Get started in 5 minutes
+`agents/feedback.py`, `agents/state.py`, `commands/builtin.py`, `commands/persistence_commands.py`, `sessions/types.py`, `tools/executor.py`, `utils/output.py`, `checkpoint/types.py`, and 19+ supporting modules.
 
-👉 **[docs/testing/summary.md](./docs/testing/summary.md)** - Complete testing overview
+### Testing Documentation
+
+👉 **[TESTING_QUICKSTART.md](./docs/TESTING_QUICKSTART.md)** - Quick reference and common commands
+
+👉 **[TEST_QUALITY_REPORT.md](./docs/TEST_QUALITY_REPORT.md)** - Comprehensive analysis and recommendations
 
 ## 🛠️ Development Guide
 
