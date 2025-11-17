@@ -34,7 +34,7 @@ pip install -r requirements.txt
 ```json
 {
   "model": {
-    "provider": "openai",  // 选择: "anthropic", "openai", 或使用自定义提供商
+    "provider": "openai", // 选择: "anthropic", "openai", "kimi"
     "temperature": 0.7,
     "max_tokens": 4000
   },
@@ -48,6 +48,11 @@ pip install -r requirements.txt
       "api_key": "your-openai-key",
       "model_name": "gpt-4o",
       "api_base": "https://api.openai.com/v1"
+    },
+    "kimi": {
+      "api_key": "your-kimi-key",
+      "model_name": "kimi-k2-thinking",
+      "api_base": "https://api.moonshot.cn/v1"
     }
   }
 }
@@ -172,12 +177,12 @@ pytest tests/ --cov=src --cov-report=html
 
 ### 模块覆盖率
 
-| 模块 | 覆盖率 | 状态 |
-|------|-------|------|
-| **utils, config, sessions, tools** | 84-90% | ✅ 优秀 |
-| **hooks, initialization, persistence** | 65-78% | 🟢 良好 |
-| **agents, clients, commands** | 46-66% | 🟡 中等 |
-| **cli, events** | 15-40% | 🟠 需改进 |
+| 模块                                   | 覆盖率 | 状态      |
+| -------------------------------------- | ------ | --------- |
+| **utils, config, sessions, tools**     | 84-90% | ✅ 优秀   |
+| **hooks, initialization, persistence** | 65-78% | 🟢 良好   |
+| **agents, clients, commands**          | 46-66% | 🟡 中等   |
+| **cli, events**                        | 15-40% | 🟠 需改进 |
 
 ### 100% 覆盖率模块（27 个文件）
 
@@ -207,7 +212,7 @@ pytest tests/ --cov=src --cov-report=html
 - **[P2](./docs/features/v0.0.1/p2-output-enhancement.md)** - Rich 输出增强 ✅
 - **[P3](./docs/features/v0.0.1/p3-event-driven-feedback.md)** - 事件驱动实时反馈 ✅
 - **[P6](./docs/features/v0.0.1/p6-checkpoint-persistence.md)** - Checkpoint 持久化（状态管理）✅
-- **[P8](./docs/P8_SESSION_MANAGER_FINAL_REPORT.md)** - 会话管理系统（4个阶段：核心实现、系统集成、生产迁移、验证）✅
+- **[P8](./docs/P8_SESSION_MANAGER_FINAL_REPORT.md)** - 会话管理系统（4 个阶段：核心实现、系统集成、生产迁移、验证）✅
 
 ### 计划功能
 

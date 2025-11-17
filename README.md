@@ -34,7 +34,7 @@ Edit `~/.tiny-claude-code/settings.json`:
 ```json
 {
   "model": {
-    "provider": "openai",  // Choose: "anthropic", "openai", or use custom provider
+    "provider": "openai", // Choose: "anthropic", "openai", "kimi"
     "temperature": 0.7,
     "max_tokens": 4000
   },
@@ -48,6 +48,11 @@ Edit `~/.tiny-claude-code/settings.json`:
       "api_key": "your-openai-key",
       "model_name": "gpt-4o",
       "api_base": "https://api.openai.com/v1"
+    },
+    "kimi": {
+      "api_key": "your-kimi-key",
+      "model_name": "kimi-k2-thinking",
+      "api_base": "https://api.moonshot.cn/v1"
     }
   }
 }
@@ -172,12 +177,12 @@ pytest tests/ --cov=src --cov-report=html
 
 ### Coverage by Module
 
-| Module | Coverage | Status |
-|--------|----------|--------|
-| **utils, config, sessions, tools** | 84-90% | ✅ Excellent |
-| **hooks, initialization, persistence** | 65-78% | 🟢 Good |
-| **agents, clients, commands** | 46-66% | 🟡 Moderate |
-| **cli, events** | 15-40% | 🟠 Needs Work |
+| Module                                 | Coverage | Status        |
+| -------------------------------------- | -------- | ------------- |
+| **utils, config, sessions, tools**     | 84-90%   | ✅ Excellent  |
+| **hooks, initialization, persistence** | 65-78%   | 🟢 Good       |
+| **agents, clients, commands**          | 46-66%   | 🟡 Moderate   |
+| **cli, events**                        | 15-40%   | 🟠 Needs Work |
 
 ### 100% Coverage Modules (27 files)
 
