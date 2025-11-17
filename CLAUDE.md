@@ -145,12 +145,63 @@ Define in `~/.tiny-claude/settings.json`:
 - CLAUDE.md can remain bilingual (internal context)
 - Internal config files can have Chinese comments
 
+### Design Document Standards
+
+📋 **Design documents must follow these rules:**
+
+1. **Location**: All feature design documents MUST be placed in `docs/features/vX.X.X/`
+   - Example: `docs/features/v0.0.1/`, `docs/features/v1.0.0/`
+
+2. **Naming Convention**: File names MUST follow the pattern `pX-feature-name.md`
+   - `p` = phase number (lowercase)
+   - `X` = phase number (digit)
+   - `feature-name` = descriptive kebab-case name
+   - Examples:
+     - ✅ `p1-input-enhancement.md`
+     - ✅ `p8-session-manager.md`
+     - ✅ `p10-web-search-tool.md`
+     - ❌ `P1-input.md` (uppercase P)
+     - ❌ `phase1-input.md` (wrong prefix)
+     - ❌ `input-enhancement.md` (missing pX prefix)
+
+3. **Version Folder**: Group related features by version milestone
+   - `v0.0.1/` - Initial release features
+   - `v0.1.0/` - Minor version features
+   - `v1.0.0/` - Major version features
+
+### Test Organization Standards
+
+🧪 **Tests must follow strict directory structure:**
+
+1. **Unit Tests**: `tests/unit/`
+   - Fast tests using mocks
+   - No external dependencies (network, database, filesystem)
+   - Example: `tests/unit/test_agent_state.py`
+
+2. **Integration Tests**: `tests/integration/`
+   - Tests with real external services
+   - May require network, database, or real APIs
+   - Use `@pytest.mark.integration` marker
+   - Example: `tests/integration/test_web_search_integration.py`
+
+3. **End-to-End Tests**: `tests/e2e/`
+   - Full workflow tests
+   - Test complete user scenarios
+   - Example: `tests/e2e/test_full_conversation.py`
+
+4. **Prohibited Locations**:
+   - ❌ `tests/test_sessions/` - Use `tests/unit/test_session_*.py` instead
+   - ❌ `tests/manual/` - Convert to `tests/integration/` with pytest
+   - ❌ Root `tests/` directory for test files - Always use subdirectories
+
 ### Benefits
 
 - Internationalization support for global developers
 - Better GitHub visibility and SEO
 - Unified codebase maintenance
 - Open source ecosystem alignment
+- Clear test separation (fast unit tests vs slow integration tests)
+- Easy to run specific test categories
 
 ---
 

@@ -114,9 +114,32 @@ For detailed architecture design, data flow, Agent state machine and more:
 
 This project includes a comprehensive test suite with **1,113 tests** (99.6% passing) and **66% code coverage**.
 
+### Test Organization
+
+Tests are organized by type following pytest best practices:
+
+```
+tests/
+├── unit/          # Unit tests (fast, use mocks, no external dependencies)
+├── integration/   # Integration tests (real external services, network)
+└── e2e/          # End-to-end tests (full workflows)
+```
+
+### Running Tests
+
 ```bash
 # Run all tests
-pytest tests/ -v
+pytest tests/
+
+# Run only unit tests (fast)
+pytest tests/unit/
+
+# Run integration tests (requires network)
+pytest tests/integration/
+# or: pytest -m integration
+
+# Skip integration tests (for offline work)
+pytest -m "not integration"
 
 # View coverage report
 pytest tests/ --cov=src --cov-report=html
@@ -131,14 +154,16 @@ pytest tests/ --cov=src --cov-report=html
 
 ### Test Distribution
 
-- **Agent System**: 97+ tests (state management, context, feedback, permissions)
-- **LLM Clients**: 35+ tests (Anthropic, OpenAI, base client, factory)
-- **Tool System**: 40+ tests (executor, file ops, bash, search, todo)
-- **Hook System**: 70+ tests (types, manager, builder, validator, config loader)
-- **Commands**: 60+ tests (builtin, persistence, workspace, session)
-- **Session Manager**: 53 tests (unit, integration, performance - **100% passing**)
-- **Integration**: 241+ tests (cross-module workflows, end-to-end scenarios)
-- **Performance**: 12 benchmarks (throughput, latency, memory efficiency)
+- **Unit Tests**: 1,000+ tests in `tests/unit/`
+  - Agent System: 97+ tests (state management, context, feedback, permissions)
+  - LLM Clients: 35+ tests (Anthropic, OpenAI, base client, factory)
+  - Tool System: 135+ tests (executor, file ops, bash, search, todo, web search)
+  - Hook System: 70+ tests (types, manager, builder, validator, config loader)
+  - Commands: 60+ tests (builtin, persistence, workspace, session)
+  - Session Manager: 53 tests (manager, types, commands, performance)
+- **Integration Tests**: 8+ tests in `tests/integration/`
+  - Web Search: Real DuckDuckGo API integration tests
+- **E2E Tests**: Planned in `tests/e2e/`
 
 ### Coverage by Module
 
