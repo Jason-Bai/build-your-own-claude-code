@@ -185,3 +185,8 @@ class OpenAIClient(BaseClient):
                 return 4096    # GPT-3.5 Turbo
         else:
             return 8192  # 默认
+
+    @property
+    def provider_name(self) -> str:
+        """返回提供商名称"""
+        return "openai"

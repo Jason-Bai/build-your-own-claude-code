@@ -9,5 +9,9 @@ mcp>=1.0.0
 rich>=13.0.0
 prompt-toolkit>=3.0.0
 
+# Web search tool
+duckduckgo-search>=4.0.0
+httpx>=0.25.0
+
 # Utilities
 python-dotenv>=1.0.0
