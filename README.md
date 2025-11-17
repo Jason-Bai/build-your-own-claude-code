@@ -11,7 +11,7 @@ A production-ready, feature-complete AI coding assistant implementation that dem
 - **Complete Tool System** - 7 built-in tools + MCP integration support
 - **Advanced Agent Architecture** - State management, context management, permission controls
 - **Event-Driven Feedback** - Real-time event streams, Hook system, extensible architecture
-- **Multi-Model Support** - Anthropic Claude ✅, OpenAI ✅, Moonshot Kimi ✅
+- **Multi-Model Support** - Anthropic Claude ✅, OpenAI ✅
 - **Session Management** - Automatic session persistence, command history tracking, session restoration
 - **Rich CLI Commands** - 10+ command system, conversation management, workflow support
 
@@ -61,7 +61,7 @@ export ANTHROPIC_API_KEY="your-anthropic-key"
 export ANTHROPIC_MODEL="claude-sonnet-4-5-20250929"  # Optional
 export ANTHROPIC_API_BASE="https://api.anthropic.com/v1"  # Optional
 
-# For OpenAI (or OpenAI-compatible APIs like Moonshot Kimi)
+# For OpenAI
 export OPENAI_API_KEY="your-openai-key"
 export OPENAI_MODEL="gpt-4o"  # Optional
 export OPENAI_API_BASE="https://api.openai.com/v1"  # Optional
@@ -79,22 +79,7 @@ cp .env.example .env
 
 **Configuration Priority:** Environment Variables > .env File > settings.json
 
-**Using OpenAI-Compatible APIs (e.g., Moonshot Kimi):**
-
-```json
-{
-  "model": {
-    "provider": "openai"
-  },
-  "providers": {
-    "openai": {
-      "api_key": "your-kimi-api-key",
-      "model_name": "moonshot-v1-8k",
-      "api_base": "https://api.moonshot.cn/v1"
-    }
-  }
-}
-```
+**Note:** The system also supports OpenAI-compatible APIs by configuring the `api_base` parameter in the OpenAI provider settings.
 
 ### 3. Run the Application
 
