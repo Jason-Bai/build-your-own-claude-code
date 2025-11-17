@@ -66,6 +66,11 @@ export OPENAI_API_KEY="your-openai-key"
 export OPENAI_MODEL="gpt-4o"  # 可选
 export OPENAI_API_BASE="https://api.openai.com/v1"  # 可选
 
+# Moonshot Kimi（使用 OpenAI 兼容 provider）
+export OPENAI_API_KEY="your-kimi-api-key"
+export OPENAI_MODEL="moonshot-v1-8k"  # 可选
+export OPENAI_API_BASE="https://api.moonshot.cn/v1"
+
 # 选择使用哪个提供商
 export MODEL_PROVIDER="openai"  # 或 "anthropic"
 ```
