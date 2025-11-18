@@ -432,6 +432,7 @@ class WebSearchTool(BaseTool):
     "enabled": true,
     "provider": "duckduckgo",  // "duckduckgo", "brave", "google"
     "api_key": null,            // Optional: for premium providers
+    "search_engine_id": null,   // Optional: for Google Custom Search
     "max_results": 5,
     "timeout": 10,
     "rate_limit": {
@@ -460,6 +461,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     if web_search_config.get("enabled", True):
         web_search_tool = WebSearchTool(
             api_key=web_search_config.get("api_key"),
+            search_engine_id=web_search_config.get("search_engine_id"),
             provider=web_search_config.get("provider", "duckduckgo"),
             max_results=web_search_config.get("max_results", 5),
             timeout=web_search_config.get("timeout", 10)

@@ -1,6 +1,6 @@
 """MCP configuration models"""
 
-from typing import List, Dict
+from typing import List, Dict, Any
 from pydantic import BaseModel
 
 
@@ -18,5 +18,5 @@ class MCPTool(BaseModel):
     """MCP 工具信息"""
     name: str
     description: str
-    input_schema: Dict[str, any]
+    input_schema: Dict[str, Any]
     server: str  # 来自哪个 MCP 服务器

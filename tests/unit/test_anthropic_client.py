@@ -1,327 +1,187 @@
 """
 Unit tests for Anthropic Client
 
-Tests client initialization, message creation, and streaming.
+Tests client initialization, message creation, streaming, and error handling.
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
+from unittest.mock import Mock, AsyncMock
+import anthropic
+import httpx
 from src.clients.anthropic import AnthropicClient
 from src.clients.base import ModelResponse
 
 
+@pytest.fixture
+def mock_anthropic_client():
+    """Fixture to mock the underlying anthropic.AsyncAnthropic client."""
+    mock_client = Mock()
+    mock_client.messages = Mock()
+    mock_response = Mock()
+    mock_response.content = [Mock(type="text", text="Hello")]
+    mock_response.stop_reason = "end_turn"
+    mock_response.usage = Mock(input_tokens=10, output_tokens=20)
+    mock_response.model = "claude-test"
+    mock_client.messages.create = AsyncMock(return_value=mock_response)
+    return mock_client
+
+
 @pytest.mark.unit
 class TestAnthropicClientInitialization:
-    """Tests for Anthropic client initialization"""
+    """Tests for Anthropic client initialization."""
 
-    def test_initialization_default(self):
-        """Test default initialization"""
-        client = AnthropicClient("test_api_key")
-
-        assert client.model == "claude-sonnet-4-5-20250929"
-        assert client.default_temperature is None
-        assert client.default_max_tokens is None
-
-    def test_initialization_custom_model(self):
-        """Test initialization with custom model"""
-        client = AnthropicClient("test_api_key", model="claude-opus-4-1")
-
-        assert client.model == "claude-opus-4-1"
-
-    def test_initialization_with_temperature(self):
-        """Test initialization with temperature"""
-        client = AnthropicClient("test_api_key", temperature=0.7)
-
-        assert client.default_temperature == 0.7
-
-    def test_initialization_with_max_tokens(self):
-        """Test initialization with max_tokens"""
-        client = AnthropicClient("test_api_key", max_tokens=5000)
-
-        assert client.default_max_tokens == 5000
-
-    def test_initialization_with_api_base(self):
-        """Test initialization with custom API base"""
-        client = AnthropicClient("test_api_key", api_base="https://custom.api.com")
-
-        assert client.client is not None
-
-    def test_initialization_all_parameters(self):
-        """Test initialization with all parameters"""
-        client = AnthropicClient(
-            "test_api_key",
-            model="claude-custom",
-            api_base="https://api.example.com",
-            temperature=0.5,
-            max_tokens=3000
-        )
-
-        assert client.model == "claude-custom"
-        assert client.default_temperature == 0.5
-        assert client.default_max_tokens == 3000
+    @pytest.mark.parametrize("params, expected", [
+        ({}, {"model": "claude-sonnet-4-5-20250929", "temp": None, "tokens": None}),
+        ({"model": "claude-opus-4-1"}, {"model": "claude-opus-4-1", "temp": None, "tokens": None}),
+        ({"temperature": 0.7}, {"model": "claude-sonnet-4-5-20250929", "temp": 0.7, "tokens": None}),
+        ({"max_tokens": 5000}, {"model": "claude-sonnet-4-5-20250929", "temp": None, "tokens": 5000}),
+        ({"api_base": "https://custom.api.com"}, {"model": "claude-sonnet-4-5-20250929", "temp": None, "tokens": None}),
+        (
+            {"model": "claude-custom", "temperature": 0.5, "max_tokens": 3000},
+            {"model": "claude-custom", "temp": 0.5, "tokens": 3000}
+        ),
+    ])
+    def test_initialization(self, params, expected):
+        """Test initialization with various parameters."""
+        client = AnthropicClient("test_api_key", **params)
+        assert client.model == expected["model"]
+        assert client.default_temperature == expected["temp"]
+        assert client.default_max_tokens == expected["tokens"]
 
 
 @pytest.mark.unit
 class TestAnthropicClientProperties:
-    """Tests for client properties"""
+    """Tests for client properties."""
 
-    def test_model_name_property(self):
-        """Test model_name property"""
+    def test_client_properties(self):
+        """Test model_name, context_window, and provider_name properties."""
         client = AnthropicClient("test_key", model="test-model")
-
         assert client.model_name == "test-model"
-
-    def test_context_window_property(self):
-        """Test context_window property"""
-        client = AnthropicClient("test_key")
-
         assert client.context_window == 200000
-
-    def test_context_window_is_integer(self):
-        """Test context_window returns integer"""
-        client = AnthropicClient("test_key")
-
         assert isinstance(client.context_window, int)
-        assert client.context_window > 0
+        assert client.provider_name == "anthropic"
 
 
 @pytest.mark.unit
 class TestAnthropicClientMessageCreation:
-    """Tests for message creation"""
+    """Tests for message creation call construction."""
 
     @pytest.mark.asyncio
-    async def test_create_message_basic(self):
-        """Test basic message creation"""
+    async def test_create_message_basic(self, mock_anthropic_client):
+        """Test basic message creation parameters."""
         client = AnthropicClient("test_key")
-
-        # Mock the async client
-        mock_response = Mock()
-        mock_response.content = [Mock(type="text", text="Hello")]
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=10, output_tokens=20)
-        mock_response.model = "claude-test"
-
-        client.client.messages.create = AsyncMock(return_value=mock_response)
+        client.client = mock_anthropic_client
 
         result = await client.create_message(
             system="You are helpful",
             messages=[{"role": "user", "content": "Hi"}],
             tools=[],
-            max_tokens=1000
+            max_tokens=1000,
+            temperature=0.8
         )
 
         assert isinstance(result, ModelResponse)
-        assert len(result.content) > 0
+        mock_anthropic_client.messages.create.assert_called_once()
+        call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
+        assert call_kwargs['system'] == "You are helpful"
+        assert call_kwargs['max_tokens'] == 1000
+        assert call_kwargs['temperature'] == 0.8
 
     @pytest.mark.asyncio
-    async def test_create_message_with_temperature_override(self):
-        """Test that default temperature is used when set"""
-        client = AnthropicClient("test_key", temperature=0.5)
+    async def test_create_message_uses_default_params(self, mock_anthropic_client):
+        """Test that default temperature and max_tokens are used."""
+        client = AnthropicClient("test_key", temperature=0.5, max_tokens=2000)
+        client.client = mock_anthropic_client
 
-        mock_response = Mock()
-        mock_response.content = []
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=0, output_tokens=0)
-        mock_response.model = "claude-test"
+        await client.create_message(system="", messages=[], tools=[], temperature=0.9, max_tokens=4000)
 
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        await client.create_message(
-            system="",
-            messages=[],
-            tools=[],
-            temperature=0.9
-        )
-
-        # Verify the client was called with the default temperature (takes precedence)
-        client.client.messages.create.assert_called_once()
-        call_kwargs = client.client.messages.create.call_args.kwargs
+        mock_anthropic_client.messages.create.assert_called_once()
+        call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
         assert call_kwargs['temperature'] == 0.5  # Default temperature takes precedence
+        assert call_kwargs['max_tokens'] == 2000   # Default max_tokens takes precedence
 
     @pytest.mark.asyncio
-    async def test_create_message_uses_default_temperature(self):
-        """Test that default temperature is used when not passed"""
-        client = AnthropicClient("test_key", temperature=0.3)
-
-        mock_response = Mock()
-        mock_response.content = []
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=0, output_tokens=0)
-        mock_response.model = "claude-test"
-
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        await client.create_message(
-            system="",
-            messages=[],
-            tools=[]
-        )
-
-        call_kwargs = client.client.messages.create.call_args.kwargs
-        assert call_kwargs['temperature'] == 0.3
-
-    @pytest.mark.asyncio
-    async def test_create_message_with_tools(self):
-        """Test message creation with tools"""
+    async def test_create_message_with_tools_and_streaming(self, mock_anthropic_client):
+        """Test message creation with tools and streaming enabled."""
         client = AnthropicClient("test_key")
-
+        client.client = mock_anthropic_client
         tools = [{"name": "bash", "description": "Execute shell commands"}]
 
-        mock_response = Mock()
-        mock_response.content = []
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=0, output_tokens=0)
-        mock_response.model = "claude-test"
+        await client.create_message(system="", messages=[], tools=tools, stream=True)
 
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        await client.create_message(
-            system="",
-            messages=[],
-            tools=tools
-        )
-
-        call_kwargs = client.client.messages.create.call_args.kwargs
+        mock_anthropic_client.messages.create.assert_called_once()
+        call_kwargs = mock_anthropic_client.messages.create.call_args.kwargs
         assert call_kwargs['tools'] == tools
-
-    @pytest.mark.asyncio
-    async def test_create_message_streaming_parameter(self):
-        """Test that stream parameter is passed correctly"""
-        client = AnthropicClient("test_key")
-
-        mock_response = Mock()
-        mock_response.content = []
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=0, output_tokens=0)
-        mock_response.model = "claude-test"
-
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        await client.create_message(
-            system="",
-            messages=[],
-            tools=[],
-            stream=False
-        )
-
-        call_kwargs = client.client.messages.create.call_args.kwargs
-        assert call_kwargs['stream'] is False
+        assert call_kwargs['stream'] is True
 
 
 @pytest.mark.unit
 class TestAnthropicClientResponseParsing:
-    """Tests for response parsing"""
+    """Tests for response parsing."""
 
     @pytest.mark.asyncio
-    async def test_parse_text_content(self):
-        """Test parsing text content from response"""
+    async def test_parse_text_and_tool_use_content(self, mock_anthropic_client):
+        """Test parsing of mixed text and tool_use content from response."""
         client = AnthropicClient("test_key")
+        client.client = mock_anthropic_client
 
         text_block = Mock(type="text", text="Response text")
-        mock_response = Mock()
-        mock_response.content = [text_block]
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=5, output_tokens=10)
-        mock_response.model = "claude-test"
-
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        result = await client.create_message(
-            system="",
-            messages=[],
-            tools=[]
-        )
-
-        assert len(result.content) == 1
-        assert result.content[0]["type"] == "text"
-        assert result.content[0]["text"] == "Response text"
-
-    @pytest.mark.asyncio
-    async def test_parse_tool_use_content(self):
-        """Test parsing tool_use content from response"""
-        client = AnthropicClient("test_key")
-
-        # Create tool_use_block as a proper mock with attributes
         tool_use_block = Mock()
         tool_use_block.type = "tool_use"
         tool_use_block.id = "tool_123"
         tool_use_block.name = "bash"
         tool_use_block.input = {"command": "ls"}
+        mock_anthropic_client.messages.create.return_value.content = [text_block, tool_use_block]
 
-        mock_response = Mock()
-        mock_response.content = [tool_use_block]
-        mock_response.stop_reason = "tool_use"
-        mock_response.usage = Mock(input_tokens=5, output_tokens=10)
-        mock_response.model = "claude-test"
+        result = await client.create_message(system="", messages=[], tools=[])
 
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        result = await client.create_message(
-            system="",
-            messages=[],
-            tools=[]
-        )
-
-        assert len(result.content) == 1
-        assert result.content[0]["type"] == "tool_use"
-        assert result.content[0]["id"] == "tool_123"
-        assert result.content[0]["name"] == "bash"
-        assert result.content[0]["input"] == {"command": "ls"}
+        assert len(result.content) == 2
+        assert result.content[0] == {"type": "text", "text": "Response text"}
+        assert result.content[1] == {"type": "tool_use", "id": "tool_123", "name": "bash", "input": {"command": "ls"}}
 
     @pytest.mark.asyncio
-    async def test_parse_usage_information(self):
-        """Test parsing usage information"""
+    async def test_parse_usage_information(self, mock_anthropic_client):
+        """Test parsing of usage information."""
         client = AnthropicClient("test_key")
+        client.client = mock_anthropic_client
+        mock_anthropic_client.messages.create.return_value.usage = Mock(input_tokens=100, output_tokens=50)
 
-        mock_response = Mock()
-        mock_response.content = []
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=100, output_tokens=50)
-        mock_response.model = "claude-test"
-
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        result = await client.create_message(
-            system="",
-            messages=[],
-            tools=[]
-        )
+        result = await client.create_message(system="", messages=[], tools=[])
 
         assert result.usage["input_tokens"] == 100
         assert result.usage["output_tokens"] == 50
 
 
 @pytest.mark.unit
-class TestAnthropicClientIntegration:
-    """Integration tests for Anthropic client"""
+class TestAnthropicClientErrorHandling:
+    """Tests for handling API errors."""
 
     @pytest.mark.asyncio
-    async def test_multiple_sequential_messages(self):
-        """Test sending multiple messages sequentially"""
+    @pytest.mark.parametrize("error_name, status_code", [
+        ("api_error", 500),
+        ("auth_error", 401),
+        ("rate_limit_error", 429),
+        ("bad_request_error", 400),
+    ])
+    async def test_api_errors_are_propagated(self, error_name, status_code, mock_anthropic_client):
+        """Test that various API errors from the underlying client are propagated."""
+        mock_request = Mock(spec=httpx.Request)
+        mock_response = Mock(spec=httpx.Response)
+        mock_response.request = mock_request
+        mock_response.headers = {}  # for request_id
+        mock_response.status_code = status_code
+
+        error_map = {
+            "api_error": anthropic.APIError(message="API Error", request=mock_request, body={}),
+            "auth_error": anthropic.AuthenticationError(message="Auth Error", response=mock_response, body={}),
+            "rate_limit_error": anthropic.RateLimitError(message="Rate Limit Error", response=mock_response, body={}),
+            "bad_request_error": anthropic.BadRequestError(message="Bad Request Error", response=mock_response, body={}),
+        }
+        error = error_map[error_name]
+
         client = AnthropicClient("test_key")
+        client.client = mock_anthropic_client
+        mock_anthropic_client.messages.create.side_effect = error
 
-        mock_response = Mock()
-        mock_response.content = [Mock(type="text", text="Response")]
-        mock_response.stop_reason = "end_turn"
-        mock_response.usage = Mock(input_tokens=10, output_tokens=20)
-        mock_response.model = "claude-test"
-
-        client.client.messages.create = AsyncMock(return_value=mock_response)
-
-        for i in range(3):
-            result = await client.create_message(
-                system="",
-                messages=[{"role": "user", "content": f"Message {i}"}],
-                tools=[]
-            )
-
-            assert isinstance(result, ModelResponse)
-
-        assert client.client.messages.create.call_count == 3
-
-    def test_client_initialization_creates_async_client(self):
-        """Test that initialization creates AsyncAnthropic client"""
-        client = AnthropicClient("test_key")
-
-        assert client.client is not None
-        assert hasattr(client.client, 'messages')
+        with pytest.raises(type(error)):
+            await client.create_message(system="", messages=[], tools=[])

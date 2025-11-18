@@ -22,7 +22,7 @@ class TestWebSearchToolInitialization:
         tool = WebSearchTool()
 
         assert tool.max_results == 5
-        assert tool.timeout == 10
+        assert tool.timeout == 20
         assert tool.region == "wt-wt"
         assert tool.safe_search == "moderate"
         assert tool._search_count == 0
@@ -342,7 +342,7 @@ class TestWebSearchToolUsageStats:
         assert stats["last_search_time"] is None
         assert stats["provider"] == "duckduckgo"
         assert stats["max_results"] == 5
-        assert stats["timeout"] == 10
+        assert stats["timeout"] == 20
 
     @pytest.mark.asyncio
     async def test_get_usage_stats_after_searches(self):
@@ -369,7 +369,7 @@ class TestWebSearchToolDuckDuckGo:
         tool = WebSearchTool()
 
         with patch('src.tools.web_search.DDGS', None):
-            with pytest.raises(ImportError, match="duckduckgo-search package not installed"):
+            with pytest.raises(ImportError, match="ddgs package not installed"):
                 await tool._search_duckduckgo("test", 5)
 
     @pytest.mark.asyncio

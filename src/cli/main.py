@@ -25,7 +25,6 @@ async def main():
 
     # Load configuration and initialize agent
     config = load_config(args.config)
-    print(config)
     agent = await initialize_agent(config, args)
     await _setup_event_listeners(get_event_bus())
 
@@ -77,7 +76,8 @@ async def main():
             for cmd in existing_commands:
                 session_manager.record_command(cmd)
             if existing_commands:
-                OutputFormatter.info(f"📚 Loaded {len(existing_commands)} existing commands")
+                OutputFormatter.info(
+                    f"📚 Loaded {len(existing_commands)} existing commands")
         except Exception:
             pass
 

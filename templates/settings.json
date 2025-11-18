@@ -21,5 +21,12 @@
     "base_dir": "~/.cache/tiny-claude-code"
   },
   "mcp_servers": [],
-  "max_turns": 20
+  "max_turns": 20,
+  "web_search": {
+    "api_key": "",
+    "search_engine_id": "",
+    "provider": "duckduckgo",
+    "max_results": 5,
+    "timeout": 20
+  }
 }

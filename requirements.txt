@@ -1,6 +1,8 @@
 # Core dependencies
 anthropic>=0.40.0
 pydantic>=2.0.0
+mcp>=1.0.0
+
 
 # MCP support
 mcp>=1.0.0
@@ -10,8 +12,14 @@ rich>=13.0.0
 prompt-toolkit>=3.0.0
 
 # Web search tool
-duckduckgo-search>=4.0.0
+ddgs>=4.0.0
 httpx>=0.25.0
 
 # Utilities
 python-dotenv>=1.0.0
+
+# Testing
+fastapi>=0.100.0
+uvicorn>=0.20.0
+pytest-mock>=3.10.0
+

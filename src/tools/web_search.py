@@ -11,7 +11,7 @@ import random
 
 # Import DDGS at module level to allow patching in tests
 try:
-    from duckduckgo_search import DDGS
+    from ddgs import DDGS
     DDGS_AVAILABLE = True
 except ImportError:
     DDGS = None
@@ -63,7 +63,7 @@ class WebSearchTool(BaseTool):
         api_key: Optional[str] = None,
         search_engine_id: Optional[str] = None,  # For Google Custom Search
         max_results: int = 5,
-        timeout: int = 10,
+        timeout: int = 20,
         region: str = "wt-wt",  # wt-wt = worldwide
         safe_search: str = "moderate",  # off, moderate, strict
         rate_limit: int = 10,  # requests per minute
@@ -304,7 +304,8 @@ class WebSearchTool(BaseTool):
 
                 if attempt < self.max_retries - 1:
                     # Calculate exponential backoff with jitter
-                    delay = self.retry_delay * (2 ** attempt) + random.uniform(0, 0.1)
+                    delay = self.retry_delay * \
+                        (2 ** attempt) + random.uniform(0, 0.1)
                     await asyncio.sleep(delay)
                 else:
                     # Final attempt failed
@@ -313,7 +314,8 @@ class WebSearchTool(BaseTool):
 
         # Should never reach here, but just in case
         self._failed_requests += 1
-        raise last_exception if last_exception else Exception("All retries exhausted")
+        raise last_exception if last_exception else Exception(
+            "All retries exhausted")
 
     async def execute(
         self,
@@ -390,7 +392,8 @@ class WebSearchTool(BaseTool):
                         used_provider = "duckduckgo (fallback)"
                     except Exception as fallback_error:
                         # Both failed
-                        raise Exception(f"Primary provider failed: {error_message}. Fallback failed: {str(fallback_error)}")
+                        raise Exception(
+                            f"Primary provider failed: {error_message}. Fallback failed: {str(fallback_error)}")
                 else:
                     raise
 
@@ -470,7 +473,7 @@ class WebSearchTool(BaseTool):
         """
         # Check if DDGS is available (allow patching in tests)
         if DDGS is None:
-            raise ImportError("duckduckgo-search package not installed")
+            raise ImportError("ddgs package not installed. Use 'pip install ddgs'.")
 
         results = []
 
@@ -522,7 +525,8 @@ class WebSearchTool(BaseTool):
             Exception: If API request fails
         """
         if not HTTPX_AVAILABLE or httpx is None:
-            raise ImportError("httpx package not installed. Install with: pip install httpx")
+            raise ImportError(
+                "httpx package not installed. Install with: pip install httpx")
 
         if not self.api_key:
             raise ValueError("Brave Search API key not configured")
@@ -569,7 +573,8 @@ class WebSearchTool(BaseTool):
             Exception: If API request fails
         """
         if not HTTPX_AVAILABLE or httpx is None:
-            raise ImportError("httpx package not installed. Install with: pip install httpx")
+            raise ImportError(
+                "httpx package not installed. Install with: pip install httpx")
 
         if not self.api_key:
             raise ValueError("Google Custom Search API key not configured")

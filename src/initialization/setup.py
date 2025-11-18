@@ -17,6 +17,7 @@ from ..persistence.manager import PersistenceManager
 from ..persistence.storage import JSONStorage, SQLiteStorage, BaseStorage
 from ..sessions.manager import SessionManager
 
+
 def create_storage_from_config(config: dict) -> BaseStorage:
     storage_config = config.get("persistence", {})
     storage_type = storage_config.get("storage_type", "json")
@@ -28,6 +29,7 @@ def create_storage_from_config(config: dict) -> BaseStorage:
         return SQLiteStorage(project_name, base_dir)
     else:
         return JSONStorage(project_name, base_dir)
+
 
 async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     """初始化 EnhancedAgent"""
@@ -92,7 +94,8 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
             mcp_client = None
 
     hook_manager = HookManager()
-    persistence_manager = PersistenceManager(create_storage_from_config(config))
+    persistence_manager = PersistenceManager(
+        create_storage_from_config(config))
 
     agent = EnhancedAgent(
         client=client,
@@ -108,9 +111,20 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     _setup_hooks(hook_manager, config, verbose=args.verbose if args else False)
     await _load_user_hooks(hook_manager, verbose=args.verbose if args else False)
 
+    # Initialize web search tool
+    web_search_config = config.get("web_search", {})
+    print(web_search_config)
+    web_search_tool = WebSearchTool(
+        api_key=web_search_config.get("api_key"),
+        search_engine_id=web_search_config.get("search_engine_id"),
+        provider=web_search_config.get("provider", "duckduckgo"),
+        max_results=web_search_config.get("max_results", 5),
+        timeout=web_search_config.get("timeout", 20)
+    )
+
     agent.tool_manager.register_tools([
         ReadTool(), WriteTool(), EditTool(), BashTool(), GlobTool(), GrepTool(),
-        TodoWriteTool(agent.todo_manager), WebSearchTool()
+        TodoWriteTool(agent.todo_manager), web_search_tool
     ])
 
     # Initialize SessionManager for session management
@@ -118,6 +132,7 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     agent.session_manager = session_manager
 
     return agent
+
 
 def _setup_hooks(hook_manager: HookManager, config: dict, verbose: bool = False) -> None:
     if verbose:
@@ -137,6 +152,7 @@ def _setup_hooks(hook_manager: HookManager, config: dict, verbose: bool = False)
         )
     hook_manager.register_error_handler(error_handler)
 
+
 async def _load_user_hooks(hook_manager: HookManager, verbose: bool = False) -> None:
     loader = HookConfigLoader()
     try:
@@ -148,6 +164,7 @@ async def _load_user_hooks(hook_manager: HookManager, verbose: bool = False) -> 
             )
     except Exception as e:
         OutputFormatter.warning(f"Error loading user hooks: {e}")
+
 
 async def _setup_event_listeners(event_bus: EventBus):
     async def on_tool_selected(event: Event):
