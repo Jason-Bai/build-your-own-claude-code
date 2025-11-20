@@ -1,7 +1,7 @@
 """Tool executor with smart retry logic"""
 
 import asyncio
-from typing import Dict
+from typing import Dict, Optional, Callable, Awaitable
 from .base import BaseTool, ToolResult
 
 
@@ -12,7 +12,8 @@ class ToolExecutor:
         self,
         tool: BaseTool,
         params: Dict,
-        max_retries: int = 2
+        max_retries: int = 2,
+        on_chunk: Optional[Callable[[str], Awaitable[None]]] = None
     ) -> ToolResult:
         """
         先尝试最多2次自动重试
@@ -21,7 +22,7 @@ class ToolExecutor:
         last_result = None
 
         for attempt in range(max_retries):
-            result = await tool.execute(**params)
+            result = await tool.execute(on_chunk=on_chunk, **params)
 
             if result.success:
                 return result

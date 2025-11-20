@@ -19,7 +19,8 @@ def json_serializer(obj):
     """JSON serializer for objects not serializable by default json code"""
     if isinstance(obj, datetime):
         return obj.isoformat()
-    raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+    raise TypeError(
+        f"Object of type {obj.__class__.__name__} is not JSON serializable")
 
 
 class BaseStorage(ABC):
@@ -34,9 +35,9 @@ class BaseStorage(ABC):
 
 
 class JSONStorage(BaseStorage):
-    def __init__(self, project_name: str, base_dir: str = "~/.cache/tiny-claude-code"):
+    def __init__(self, project_name: str, base_dir: str = "~/.tiny-claude-code"):
         base_path = Path(base_dir).expanduser()
-        self.storage_dir = base_path / "projects" / project_name / "persistence"
+        self.storage_dir = base_path / "projects" / project_name
         self.storage_dir.mkdir(parents=True, exist_ok=True)
 
     async def save(self, category: str, key: str, data: Dict) -> str:
@@ -50,14 +51,16 @@ class JSONStorage(BaseStorage):
             try:
                 with lock:
                     with open(file_path, 'w', encoding='utf-8') as f:
-                        json.dump(data, f, ensure_ascii=False, indent=2, default=json_serializer)
+                        json.dump(data, f, ensure_ascii=False,
+                                  indent=2, default=json_serializer)
             except Timeout:
                 raise RuntimeError(
                     f"Could not acquire lock for file {file_path}")
         else:
             # Fallback for environments without filelock
             with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2, default=json_serializer)
+                json.dump(data, f, ensure_ascii=False,
+                          indent=2, default=json_serializer)
 
         return str(file_path)
 
@@ -87,7 +90,7 @@ class JSONStorage(BaseStorage):
 
 
 class SQLiteStorage(BaseStorage):
-    def __init__(self, project_name: str, base_dir: str = "~/.cache/tiny-claude-code"):
+    def __init__(self, project_name: str, base_dir: str = "~/.tiny-claude-code"):
         base_path = Path(base_dir).expanduser()
         self.db_path = base_path / "projects" / project_name / "persistence.db"
         self.db_path.parent.mkdir(parents=True, exist_ok=True)

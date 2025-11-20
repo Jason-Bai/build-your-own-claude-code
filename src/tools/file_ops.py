@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Callable, Awaitable
 from .base import BaseTool, ToolResult, ToolPermissionLevel
 
 
@@ -45,7 +45,8 @@ Usage:
             "required": ["file_path"]
         }
 
-    async def execute(self, file_path: str, offset: int = 0, limit: int = 2000) -> ToolResult:
+    async def execute(self, file_path: str, on_chunk: Optional[Callable[[str], Awaitable[None]]] = None,
+                     offset: int = 0, limit: int = 2000) -> ToolResult:
         """读取文件内容"""
         try:
             path = Path(file_path)
@@ -144,7 +145,8 @@ Usage:
             "required": ["file_path", "content"]
         }
 
-    async def execute(self, file_path: str, content: str) -> ToolResult:
+    async def execute(self, file_path: str, content: str,
+                     on_chunk: Optional[Callable[[str], Awaitable[None]]] = None) -> ToolResult:
         """写入文件"""
         try:
             path = Path(file_path)
@@ -218,7 +220,8 @@ Usage:
         }
 
     async def execute(self, file_path: str, old_string: str, new_string: str,
-                     replace_all: bool = False) -> ToolResult:
+                     replace_all: bool = False,
+                     on_chunk: Optional[Callable[[str], Awaitable[None]]] = None) -> ToolResult:
         """编辑文件"""
         try:
             path = Path(file_path)

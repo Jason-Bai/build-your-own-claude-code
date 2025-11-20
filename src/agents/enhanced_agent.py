@@ -83,10 +83,17 @@ class EnhancedAgent:
         if checkpoint.context:
             self.context_manager.restore_context(checkpoint.context)
 
-    def _transition_state(self, new_state: AgentState):
+    async def _transition_state(self, new_state: AgentState):
         """状态转换，触发回调"""
         old_state = self.state_manager.current_state
         self.state_manager.transition_to(new_state)
+
+        # Emit state change event for UI
+        await self.event_bus.emit(Event(
+            EventType.AGENT_STATE_CHANGED,
+            state=new_state,
+            old_state=old_state
+        ))
 
         if self.on_state_change:
             self.on_state_change(old_state, new_state)
@@ -113,7 +120,7 @@ class EnhancedAgent:
         await self.event_bus.emit(Event(EventType.AGENT_START, user_input=user_input))
 
         self.context_manager.add_user_message(user_input)
-        self._transition_state(AgentState.THINKING)
+        await self._transition_state(AgentState.THINKING)
         feedback.add_thinking()
 
         await self.event_bus.emit(Event(EventType.AGENT_THINKING, turn=self.state_manager.current_turn))
@@ -132,7 +139,7 @@ class EnhancedAgent:
         while True:
             if self.state_manager.increment_turn():
                 if verbose: print("\n⚠️ Reached maximum turn limit")
-                self._transition_state(AgentState.ERROR)
+                await self._transition_state(AgentState.ERROR)
                 break
 
             try:
@@ -158,7 +165,7 @@ class EnhancedAgent:
 
                 if not tool_uses:
                     self.context_manager.add_assistant_message(response.content)
-                    self._transition_state(AgentState.COMPLETED)
+                    await self._transition_state(AgentState.COMPLETED)
                     await self.event_bus.emit(Event(
                         EventType.AGENT_END, success=True, final_response=final_response,
                         turn=self.state_manager.current_turn
@@ -178,7 +185,7 @@ class EnhancedAgent:
                         "context": self.context_manager.get_context_info(),
                     }
 
-                self._transition_state(AgentState.USING_TOOL)
+                await self._transition_state(AgentState.USING_TOOL)
                 tool_results = await self._execute_tools(tool_uses, verbose, feedback)
                 self.context_manager.add_assistant_message(response.content)
                 self.context_manager.add_tool_results(tool_results, provider=self.client.provider_name)
@@ -189,7 +196,7 @@ class EnhancedAgent:
                     result={"tool_results": tool_results}
                 )
 
-                self._transition_state(AgentState.THINKING)
+                await self._transition_state(AgentState.THINKING)
                 await self.event_bus.emit(Event(EventType.AGENT_THINKING, turn=self.state_manager.current_turn + 1))
 
             except Exception as e:
@@ -209,7 +216,7 @@ class EnhancedAgent:
                     feedback.add_info("Attempting recovery from last checkpoint...")
                     continue
                 else:
-                    self._transition_state(AgentState.ERROR)
+                    await self._transition_state(AgentState.ERROR)
                     await self.event_bus.emit(Event(EventType.AGENT_ERROR, error=str(e), error_type=type(e).__name__))
                     await self.hook_manager.trigger(
                         HookEvent.ON_ERROR,
@@ -400,8 +407,21 @@ class EnhancedAgent:
                 )
             )
 
+            # Define stream bridge for real-time UI updates
+            async def _stream_bridge(chunk: str):
+                await self.event_bus.emit(Event(
+                    EventType.TOOL_OUTPUT_CHUNK,
+                    tool_name=tool_name,
+                    tool_id=tool_id,
+                    chunk=chunk
+                ))
+
             # 执行工具
-            result = await self.tool_manager.execute_tool(tool_name, tool_input)
+            result = await self.tool_manager.execute_tool(
+                tool_name, 
+                tool_input, 
+                on_chunk=_stream_bridge
+            )
 
             # 更新工具调用结果
             self.state_manager.update_tool_call_result(

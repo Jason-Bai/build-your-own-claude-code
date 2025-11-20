@@ -17,6 +17,9 @@ class EventType(Enum):
     AGENT_END = "agent_end"
     AGENT_ERROR = "agent_error"
 
+    # Agent State Changes
+    AGENT_STATE_CHANGED = "agent_state_changed"
+
     # Thinking phase
     AGENT_THINKING = "agent_thinking"
     AGENT_THINKING_END = "agent_thinking_end"
@@ -25,13 +28,23 @@ class EventType(Enum):
     TOOL_SELECTED = "tool_selected"
 
     # Tool execution phase
-    TOOL_EXECUTING = "tool_executing"
+    TOOL_STARTED = "tool_started"  # Tool begins execution (replaces TOOL_EXECUTING)
+    TOOL_EXECUTING = "tool_executing"  # Kept for backward compatibility
+    TOOL_OUTPUT_CHUNK = "tool_output_chunk"
     TOOL_COMPLETED = "tool_completed"
     TOOL_ERROR = "tool_error"
 
     # LLM communication
     LLM_CALLING = "llm_calling"
     LLM_RESPONSE = "llm_response"
+
+    # User interaction
+    USER_INPUT_PAUSED = "user_input_paused"  # ESC key pressed
+    USER_INPUT_RESUMED = "user_input_resumed"  # Input resumed after pause
+
+    # Permission requests (for UI coordination)
+    PERMISSION_REQUESTED = "permission_requested"  # Permission dialog shown
+    PERMISSION_RESOLVED = "permission_resolved"    # Permission dialog closed
 
     # Status updates
     STATUS_UPDATE = "status_update"

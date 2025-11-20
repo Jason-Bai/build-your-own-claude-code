@@ -9,6 +9,8 @@ from ..events import get_event_bus
 from ..config.loader import load_config
 from ..config.args import parse_args
 from ..initialization.setup import initialize_agent, _setup_event_listeners
+from .exceptions import SessionPausedException
+from .ui_coordinator import init_coordinator
 
 
 async def main():
@@ -26,7 +28,18 @@ async def main():
     # Load configuration and initialize agent
     config = load_config(args.config)
     agent = await initialize_agent(config, args)
-    await _setup_event_listeners(get_event_bus())
+    
+    # Setup Event Bus and UI Coordinator
+    event_bus = get_event_bus()
+    await _setup_event_listeners(event_bus)
+
+    # ✨ Initialize UI Coordinator (replaces直接 InterfaceManager)
+    # This handles mode switching between REACTIVE and INTERACTIVE
+    coordinator = init_coordinator(
+        event_bus,
+        OutputFormatter.console,
+        enable_reactive_ui=True  # Set to False to disable Live Display
+    )
 
     # Register all built-in commands
     register_builtin_commands()
@@ -34,26 +47,12 @@ async def main():
     # Create CLI context
     cli_context = CLIContext(agent, config={})
 
-    # Print welcome message
-    claude_md_info = None
+    # Load project context from CLAUDE.md if present
     claude_md_path = Path.cwd() / "CLAUDE.md"
     if claude_md_path.exists():
         try:
             with open(claude_md_path, 'r', encoding='utf-8') as f:
                 claude_md_info = f.read()
-        except:
-            pass
-
-    OutputFormatter.print_welcome(
-        model_name=agent.client.model_name,
-        provider=config.get("model", {}).get("provider", "unknown"),
-        tools_count=len(agent.tool_manager.tools) if hasattr(
-            agent, 'tool_manager') else 0,
-    )
-
-    # Load project context from CLAUDE.md if present
-    if claude_md_info:
-        try:
             agent.context_manager.set_system_prompt(
                 f"[System: Project Context]\n\n{claude_md_info}"
             )
@@ -67,7 +66,10 @@ async def main():
     session_manager = agent.session_manager
     project_name = Path.cwd().name
     session = session_manager.start_session(project_name)
-    OutputFormatter.info(f"📝 Session started: {session.session_id}")
+    
+    # Display Welcome Message
+    if OutputFormatter.level != OutputLevel.QUIET:
+        OutputFormatter.display_welcome_message(session.session_id)
 
     # Sync existing command history to session (if any)
     if input_manager.history:
@@ -75,9 +77,6 @@ async def main():
             existing_commands = list(input_manager.history.get_strings())
             for cmd in existing_commands:
                 session_manager.record_command(cmd)
-            if existing_commands:
-                OutputFormatter.info(
-                    f"📚 Loaded {len(existing_commands)} existing commands")
         except Exception:
             pass
 
@@ -107,16 +106,11 @@ async def main():
                 session_manager.record_command(user_input)
 
                 # Otherwise, send to agent
-                OutputFormatter.print_separator()
-                OutputFormatter.print_assistant_response_header()
-                result = await agent.run(user_input, verbose=True)
+                # Note: UI Manager handles the "Thinking..." and tool execution visualization
+                # We disable verbose output in agent.run to avoid duplicate printing
+                result = await agent.run(user_input, verbose=False)
 
                 if isinstance(result, dict):
-                    # Show feedback messages
-                    feedback_messages = result.get("feedback", [])
-                    for feedback_msg in feedback_messages:
-                        OutputFormatter.info(feedback_msg)
-
                     final_response = result.get("final_response", "")
                     if final_response:
                         OutputFormatter.print_assistant_response(
@@ -136,6 +130,10 @@ async def main():
                     # Save session after each interaction
                     await session_manager.save_session_async()
 
+            except SessionPausedException:
+                # Handle ESC key pause
+                OutputFormatter.info("\nSession paused. Input cleared.")
+                continue
             except KeyboardInterrupt:
                 OutputFormatter.info("Use /exit to quit properly")
                 continue

@@ -1,6 +1,6 @@
 """Todo management tool"""
 
-from typing import List, Dict
+from typing import List, Dict, Optional, Callable, Awaitable
 from .base import BaseTool, ToolResult, ToolPermissionLevel
 
 
@@ -74,7 +74,8 @@ Important:
             "required": ["todos"]
         }
 
-    async def execute(self, todos: List[Dict]) -> ToolResult:
+    async def execute(self, todos: List[Dict],
+                     on_chunk: Optional[Callable[[str], Awaitable[None]]] = None) -> ToolResult:
         """更新 todo 列表"""
         try:
             # 验证 todos 格式

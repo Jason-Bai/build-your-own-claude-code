@@ -5,8 +5,11 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.completion import Completer, Completion, CompleteEvent
 from prompt_toolkit.styles import Style
 from prompt_toolkit.document import Document
+from prompt_toolkit.key_binding import KeyBindings
 from pathlib import Path
 import os
+from src.cli.exceptions import SessionPausedException
+from src.events import get_event_bus, Event, EventType
 
 
 class CommandCompleter(Completer):
@@ -86,10 +89,10 @@ class PromptInputManager:
         初始化输入管理器
 
         Args:
-            history_file: 历史记录文件名（保存在 ~/.cache/tiny_claude_code/ 目录下）
+            history_file: 历史记录文件名（保存在 ~/.tiny_claude_code/ 目录下）
         """
         # 创建缓存目录
-        cache_dir = Path.home() / ".cache" / "tiny_claude_code"
+        cache_dir = Path.home() / ".tiny_claude_code"
         cache_dir.mkdir(parents=True, exist_ok=True)
 
         # 历史记录路径
@@ -129,7 +132,29 @@ class PromptInputManager:
             enable_history_search=True,    # Ctrl+R 搜索历史
             search_ignore_case=True,       # 搜索时忽略大小写
             mouse_support=True,            # 支持鼠标
+            key_bindings=self._create_key_bindings(),
         )
+
+    def _create_key_bindings(self):
+        """创建自定义按键绑定"""
+        bindings = KeyBindings()
+
+        @bindings.add('escape')
+        def _(event):
+            """按下 ESC 键时抛出 SessionPausedException"""
+            # 清除当前输入并重置
+            event.app.current_buffer.text = ""
+
+            # Emit event for UI to react
+            try:
+                event_bus = get_event_bus()
+                event_bus.emit_sync(Event(EventType.USER_INPUT_PAUSED))
+            except Exception:
+                pass  # Don't break on event emission failure
+
+            raise SessionPausedException("Session paused by user")
+
+        return bindings
 
     def get_input(self, prompt: str = "👤 You: ", default: str = "") -> str:
         """

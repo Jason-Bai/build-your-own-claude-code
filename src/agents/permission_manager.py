@@ -3,8 +3,10 @@
 import json
 import os
 from pathlib import Path
-from typing import Dict, Set, Tuple
+from typing import Dict, Set, Tuple, Optional
 from enum import Enum
+
+from ..events import EventBus, Event, EventType, get_event_bus
 
 
 class PermissionMode(Enum):
@@ -18,9 +20,12 @@ class PermissionMode(Enum):
 class PermissionManager:
     """工具执行权限管理器"""
 
-    def __init__(self, mode: PermissionMode = PermissionMode.AUTO_APPROVE_SAFE, config: dict = None):
+    def __init__(self, mode: PermissionMode = PermissionMode.AUTO_APPROVE_SAFE,
+                 config: dict = None,
+                 event_bus: Optional[EventBus] = None):
         self.mode = mode
         self.config = config or {}
+        self.event_bus = event_bus or get_event_bus()
 
         # 从配置加载预设权限
         self.approved_tools: Set[str] = set(
@@ -89,48 +94,65 @@ class PermissionManager:
         return await self._prompt_user(tool, params)
 
     async def _prompt_user(self, tool, params: Dict) -> Tuple[bool, str]:
-        """提示用户确认"""
-        print("\n" + "=" * 50)
-        print("🔐 Permission Request")
-        print("=" * 50)
-        print(f"Tool: {tool.name}")
-        print(f"Level: {tool.permission_level.value.upper()}")
-        print(f"Description: {tool.description}")
-        print(f"\nParameters:")
-        print(json.dumps(params, indent=2))
+        """提示用户确认 - 紧凑格式"""
 
-        if tool.permission_level.value == "dangerous":
-            print("\n⚠️  WARNING: This is a potentially DANGEROUS operation!")
-            print("⚠️  Please review the parameters carefully.")
+        # 🔔 通知 UICoordinator: 需要同步输入（暂停 Live Display）
+        await self.event_bus.emit(Event(
+            EventType.PERMISSION_REQUESTED,
+            tool_name=tool.name,
+            level=tool.permission_level.value
+        ))
 
-        print("\nOptions:")
-        print("  [y] Yes, allow this once")
-        print("  [n] No, deny this once")
-        print("  [a] Always allow this tool")
-        print("  [v] Never allow this tool")
-        print("=" * 50)
-
-        while True:
-            try:
-                choice = input("Your choice: ").lower().strip()
-
-                if choice == 'y':
-                    return True, ""
-                elif choice == 'n':
-                    return False, "Permission denied by user"
-                elif choice == 'a':
-                    self.approved_tools.add(tool.name)
-                    print(f"✓ Will always allow '{tool.name}' in this session")
-                    return True, ""
-                elif choice == 'v':
-                    self.denied_tools.add(tool.name)
-                    print(f"✓ Will never allow '{tool.name}' in this session")
-                    return False, "Permission denied by user"
+        try:
+            # 简化参数显示（只显示关键参数，限制长度）
+            simplified_params = {}
+            for key, value in params.items():
+                if isinstance(value, str) and len(value) > 50:
+                    simplified_params[key] = value[:50] + "..."
                 else:
-                    print("Invalid choice. Please enter y/n/a/v")
-            except (EOFError, KeyboardInterrupt):
-                print("\n")
-                return False, "Permission request interrupted"
+                    simplified_params[key] = value
+
+            # 使用紧凑的表格式显示
+            print("\n" + "━" * 60)
+            level_symbol = "⚠️" if tool.permission_level.value == "dangerous" else "🔐"
+            print(f"{level_symbol}  Permission Required: {tool.name} ({tool.permission_level.value.upper()})")
+            print("━" * 60)
+            print(f"Parameters: {json.dumps(simplified_params, ensure_ascii=False)}")
+
+            if tool.permission_level.value == "dangerous":
+                print("⚠️  WARNING: Potentially DANGEROUS operation!")
+
+            print("\n[y]es  [n]o  [a]lways  ne[v]er")
+
+            # 同步等待用户输入（Live Display 已停止，不会冲突）
+            while True:
+                try:
+                    choice = input("Your choice: ").lower().strip()
+
+                    if choice == 'y':
+                        return True, ""
+                    elif choice == 'n':
+                        return False, "Permission denied by user"
+                    elif choice == 'a':
+                        self.approved_tools.add(tool.name)
+                        print(f"✓ Will always allow '{tool.name}' in this session")
+                        return True, ""
+                    elif choice == 'v':
+                        self.denied_tools.add(tool.name)
+                        print(f"✓ Will never allow '{tool.name}' in this session")
+                        return False, "Permission denied by user"
+                    else:
+                        print("Invalid choice. Please enter y/n/a/v")
+                except (EOFError, KeyboardInterrupt):
+                    print("\n")
+                    return False, "Permission request interrupted"
+
+        finally:
+            # 🔔 通知 UICoordinator: 同步输入完成（恢复 Live Display）
+            await self.event_bus.emit(Event(
+                EventType.PERMISSION_RESOLVED,
+                tool_name=tool.name
+            ))
 
     def save_preferences(self, config_path: str = "~/.tiny-claude-code/settings.json"):
         """保存用户权限偏好到配置文件"""

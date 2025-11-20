@@ -14,7 +14,7 @@ from src.checkpoint.manager import CheckpointManager
 pytestmark = pytest.mark.asyncio
 
 PROJECT_NAME = "test_project"
-BASE_DIR = "~/.cache/tiny-claude-code-tests"
+BASE_DIR = "~/.tiny-claude-code-tests"
 
 @pytest.fixture(scope="module")
 def event_loop():

@@ -2,6 +2,7 @@
 
 import asyncio
 import shlex
+from typing import Optional, Callable, Awaitable
 from .base import BaseTool, ToolResult, ToolPermissionLevel
 
 
@@ -45,8 +46,8 @@ Usage:
             "required": ["command"]
         }
 
-    async def execute(self, command: str, timeout: int = 120000,
-                     description: str = "") -> ToolResult:
+    async def execute(self, command: str, on_chunk: Optional[Callable[[str], Awaitable[None]]] = None,
+                     timeout: int = 120000, description: str = "") -> ToolResult:
         """执行 Bash 命令"""
         try:
             # 转换超时时间为秒
@@ -56,46 +57,53 @@ Usage:
             process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT, # Redirect stderr to stdout for unified streaming
                 shell=True
             )
 
+            output_buffer = []
+
+            async def read_stream():
+                """Read stream with robust error handling for callbacks"""
+                while True:
+                    line = await process.stdout.readline()
+                    if not line:
+                        break
+                    decoded_line = line.decode('utf-8', errors='replace')
+                    output_buffer.append(decoded_line)
+
+                    # Call chunk callback with error handling
+                    if on_chunk:
+                        try:
+                            await on_chunk(decoded_line)
+                        except Exception as e:
+                            # Log the error but don't interrupt tool execution
+                            import logging
+                            logging.getLogger(__name__).error(
+                                f"Error in chunk callback: {e}", exc_info=True
+                            )
+                            # Continue execution even if callback fails
+
             try:
-                stdout, stderr = await asyncio.wait_for(
-                    process.communicate(),
-                    timeout=timeout_seconds
-                )
+                # Wait for both the process to finish and the stream reading to finish
+                # But we need to enforce timeout
+                await asyncio.wait_for(read_stream(), timeout=timeout_seconds)
+                await process.wait() # Ensure process is actually dead/reaped
+
             except asyncio.TimeoutError:
                 process.kill()
                 await process.wait()
                 return ToolResult(
                     success=False,
-                    output="",
+                    output="".join(output_buffer),
                     error=f"Command timed out after {timeout_seconds}s"
                 )
 
-            # 解码输出
-            stdout_text = stdout.decode('utf-8', errors='replace')
-            stderr_text = stderr.decode('utf-8', errors='replace')
-
-            # 合并输出
-            output_parts = []
-            if stdout_text:
-                output_parts.append(stdout_text)
-            if stderr_text:
-                output_parts.append(f"[stderr]\n{stderr_text}")
-
-            output = "\n".join(output_parts) if output_parts else "(no output)"
+            output = "".join(output_buffer) if output_buffer else "(no output)"
 
             # 检查返回码
             success = process.returncode == 0
-
-            if not success:
-                error_msg = f"Command exited with code {process.returncode}"
-                if stderr_text:
-                    error_msg += f"\n{stderr_text}"
-            else:
-                error_msg = None
+            error_msg = None if success else f"Command exited with code {process.returncode}"
 
             return ToolResult(
                 success=success,

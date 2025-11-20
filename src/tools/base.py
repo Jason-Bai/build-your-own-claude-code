@@ -1,7 +1,7 @@
 """Base tool interface and result class"""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Callable, Awaitable, Optional
 from pydantic import BaseModel
 from enum import Enum
 
@@ -46,6 +46,6 @@ class BaseTool(ABC):
         pass
 
     @abstractmethod
-    async def execute(self, **params) -> ToolResult:
+    async def execute(self, on_chunk: Optional[Callable[[str], Awaitable[None]]] = None, **params) -> ToolResult:
         """执行工具"""
         pass

@@ -9,6 +9,7 @@ from rich.syntax import Syntax
 from rich.table import Table
 from rich.panel import Panel
 from rich.style import Style
+from rich.text import Text
 
 
 class OutputLevel(Enum):
@@ -24,10 +25,32 @@ class OutputFormatter:
     console = Console()
     level: OutputLevel = OutputLevel.NORMAL
 
+    # Quiet mode flags (for UICoordinator integration)
+    _quiet_thinking = False   # Suppress thinking messages
+    _quiet_tools = False      # Suppress tool usage messages
+
     @classmethod
     def set_level(cls, level: OutputLevel):
         """设置输出级别"""
         cls.level = level
+
+    @classmethod
+    def set_quiet_mode(cls, thinking: bool = False, tools: bool = False):
+        """
+        设置静默模式（避免与 UI Manager 重复输出）
+
+        当 InterfaceManager 活跃时，应设置：
+        - thinking=True: 不打印 "Thinking..." 消息
+        - tools=True: 不打印 "Using tool..." 消息
+
+        当切换到 INTERACTIVE 模式时，应恢复正常输出。
+
+        Args:
+            thinking: 是否静默 thinking 状态消息
+            tools: 是否静默 tool 使用消息
+        """
+        cls._quiet_thinking = thinking
+        cls._quiet_tools = tools
 
     # ========== 基础输出 ==========
 
@@ -35,17 +58,32 @@ class OutputFormatter:
     def success(cls, msg: str):
         """成功信息 - 绿色"""
         if cls.level.value >= OutputLevel.NORMAL.value:
+            # Check quiet mode for tool completion messages
+            if cls._quiet_tools and ("completed" in msg.lower() or "finished" in msg.lower()):
+                return  # Suppress tool completion messages
             cls.console.print(f"✓ {msg}", style="green")
 
     @classmethod
     def error(cls, msg: str):
-        """错误信息 - 红色（总是显示）"""
+        """错误信息 - 红色"""
+        # 检查是否为工具相关错误且处于quiet mode
+        # InterfaceManager会在Panel内显示工具错误，避免重复
+        if cls._quiet_tools and any(kw in msg.lower() for kw in ["tool", "failed", "completed", "error"]):
+            # 检查是否真的是工具错误（不是Agent级别错误）
+            if "agent error" not in msg.lower():
+                return  # Suppress tool-related errors in quiet mode
         cls.console.print(f"❌ {msg}", style="red bold")
 
     @classmethod
     def info(cls, msg: str):
         """信息提示 - 蓝色"""
         if cls.level.value >= OutputLevel.NORMAL.value:
+            # Check quiet mode flags
+            if cls._quiet_thinking and ("thinking" in msg.lower() or "💭" in msg):
+                return  # Suppress thinking messages
+            if cls._quiet_tools and ("using" in msg.lower() or "🔧" in msg or "tool" in msg.lower()):
+                return  # Suppress tool messages
+
             cls.console.print(f"ℹ️  {msg}", style="cyan")
 
     @classmethod
@@ -57,6 +95,8 @@ class OutputFormatter:
     @classmethod
     def thinking(cls, msg: str = "Thinking..."):
         """AI 思考过程（verbose 模式）"""
+        if cls._quiet_thinking:
+            return  # Suppress in quiet mode
         if cls.level.value >= OutputLevel.VERBOSE.value:
             cls.console.print(f"💭 {msg}", style="dim magenta")
 
@@ -71,6 +111,9 @@ class OutputFormatter:
     @classmethod
     def tool_use(cls, tool_name: str, params: Optional[dict] = None):
         """工具使用通知 - 增强显示"""
+        if cls._quiet_tools:
+            return  # Suppress in quiet mode
+
         if cls.level.value >= OutputLevel.NORMAL.value:
             cls.console.print(f"🔧 {tool_name}", style="yellow")
 
@@ -192,6 +235,16 @@ class OutputFormatter:
             padding=(1, 2)
         )
         cls.console.print(panel)
+
+    @classmethod
+    def display_welcome_message(cls, session_id: str):
+        """显示欢迎信息（新版）"""
+        title = Text("Build Your Own Claude Code",
+                     style="bold magenta", justify="center")
+        content = Text(
+            f"Welcome! Session ID: {session_id}\nType '/help' for commands.", justify="center")
+        cls.console.print(Panel(content, title=title,
+                          border_style="magenta", title_align="center"))
 
     @classmethod
     def print_user_prompt(cls):

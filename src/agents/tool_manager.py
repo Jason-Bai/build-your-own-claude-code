@@ -1,6 +1,6 @@
 """Tool manager for agents"""
 
-from typing import Dict, List, Optional, TYPE_CHECKING
+from typing import Dict, List, Optional, TYPE_CHECKING, Callable, Awaitable
 from ..tools import BaseTool, ToolResult, ToolExecutor
 
 if TYPE_CHECKING:
@@ -47,12 +47,19 @@ class AgentToolManager:
 
         return definitions
 
-    async def execute_tool(self, name: str, params: Dict) -> ToolResult:
+    async def execute_tool(
+        self, 
+        name: str, 
+        params: Dict, 
+        on_chunk: Optional[Callable[[str], Awaitable[None]]] = None
+    ) -> ToolResult:
         """执行工具（带智能重试），支持内置工具和 MCP 工具"""
         # 先检查内置工具
         if name in self.tools:
             tool = self.tools[name]
-            result = await self.executor.execute_with_smart_retry(tool, params)
+            result = await self.executor.execute_with_smart_retry(
+                tool, params, on_chunk=on_chunk
+            )
             self.tool_usage_stats[name] = self.tool_usage_stats.get(name, 0) + 1
             return result
 

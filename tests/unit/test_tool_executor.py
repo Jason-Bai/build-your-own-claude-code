@@ -49,7 +49,7 @@ class TestToolExecutorSmartRetry:
 
         assert result.success is True
         assert result.output == "Success"
-        mock_tool.execute.assert_called_once_with(**params)
+        mock_tool.execute.assert_called_once_with(on_chunk=None, **params)
 
     @pytest.mark.asyncio
     async def test_execute_with_smart_retry_with_params(self):
@@ -63,7 +63,7 @@ class TestToolExecutorSmartRetry:
         result = await executor.execute_with_smart_retry(mock_tool, params)
 
         assert result.success is True
-        mock_tool.execute.assert_called_once_with(**params)
+        mock_tool.execute.assert_called_once_with(on_chunk=None, **params)
 
     @pytest.mark.asyncio
     async def test_execute_with_smart_retry_retryable_error_first_retry(self):

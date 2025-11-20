@@ -21,7 +21,7 @@ from ..sessions.manager import SessionManager
 def create_storage_from_config(config: dict) -> BaseStorage:
     storage_config = config.get("persistence", {})
     storage_type = storage_config.get("storage_type", "json")
-    base_dir = storage_config.get("base_dir", "~/.cache/tiny-claude-code")
+    base_dir = storage_config.get("base_dir", "~/.tiny-claude-code")
 
     project_name = Path.cwd().name
 
@@ -113,7 +113,6 @@ async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
 
     # Initialize web search tool
     web_search_config = config.get("web_search", {})
-    print(web_search_config)
     web_search_tool = WebSearchTool(
         api_key=web_search_config.get("api_key"),
         search_engine_id=web_search_config.get("search_engine_id"),
@@ -156,12 +155,7 @@ def _setup_hooks(hook_manager: HookManager, config: dict, verbose: bool = False)
 async def _load_user_hooks(hook_manager: HookManager, verbose: bool = False) -> None:
     loader = HookConfigLoader()
     try:
-        stats = await loader.load_hooks(hook_manager, skip_errors=True)
-        if stats["loaded_files"] > 0:
-            OutputFormatter.success(
-                f"Loaded {stats['registered_handlers']} user hooks from "
-                f"{stats['loaded_files']} config file(s)"
-            )
+        await loader.load_hooks(hook_manager, skip_errors=True)
     except Exception as e:
         OutputFormatter.warning(f"Error loading user hooks: {e}")
 

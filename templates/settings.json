@@ -18,7 +18,7 @@
   },
   "persistence": {
     "storage_type": "json",
-    "base_dir": "~/.cache/tiny-claude-code"
+    "base_dir": "~/.tiny-claude-code"
   },
   "mcp_servers": [],
   "max_turns": 20,

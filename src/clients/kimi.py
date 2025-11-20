@@ -185,11 +185,18 @@ class KimiClient(OpenAIClient):
         # 工具调用
         if message.tool_calls:
             for tool_call in message.tool_calls:
+                # 安全地解析JSON参数（避免eval的安全风险和true/false/null问题）
+                try:
+                    tool_input = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError:
+                    # 如果JSON解析失败，尝试作为空对象
+                    tool_input = {}
+
                 content.append({
                     "type": "tool_use",
                     "id": tool_call.id,
                     "name": tool_call.function.name,
-                    "input": eval(tool_call.function.arguments)  # JSON string -> dict
+                    "input": tool_input
                 })
 
         return ModelResponse(

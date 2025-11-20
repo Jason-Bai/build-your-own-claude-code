@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 from pathlib import Path
+from typing import Optional, Callable, Awaitable
 from .base import BaseTool, ToolResult, ToolPermissionLevel
 
 
@@ -42,7 +43,8 @@ Usage:
             "required": ["pattern"]
         }
 
-    async def execute(self, pattern: str, path: str = ".") -> ToolResult:
+    async def execute(self, pattern: str, path: str = ".",
+                     on_chunk: Optional[Callable[[str], Awaitable[None]]] = None) -> ToolResult:
         """执行文件搜索"""
         try:
             search_path = Path(path)
@@ -142,7 +144,8 @@ Usage:
 
     async def execute(self, pattern: str, path: str = ".", glob: str = None,
                      output_mode: str = "files_with_matches",
-                     case_insensitive: bool = False) -> ToolResult:
+                     case_insensitive: bool = False,
+                     on_chunk: Optional[Callable[[str], Awaitable[None]]] = None) -> ToolResult:
         """执行代码搜索"""
         try:
             # 构建 grep 命令
