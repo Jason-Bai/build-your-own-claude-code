@@ -74,6 +74,32 @@ class ExitCommand(Command):
 
     async def execute(self, args: str, context: CLIContext) -> Optional[str]:
         print("\n👋 Goodbye!")
+
+        # Properly clean up before exiting
+        from ..logging import get_action_logger
+        from ..logging.constants import DEFAULT_BATCH_TIMEOUT
+        import time
+
+        # End session if it exists
+        if hasattr(context.agent, 'session_manager'):
+            session_manager = context.agent.session_manager
+            if session_manager.current_session:
+                await session_manager.end_session_async()
+
+        # Wait for worker thread to process the session_end log
+        # Worker thread has a batch_timeout (default 1.0s), so we need to wait
+        # longer than that to ensure it completes the batch write
+        action_logger = get_action_logger()
+        wait_time = DEFAULT_BATCH_TIMEOUT + 0.5  # Add 0.5s buffer
+        time.sleep(wait_time)
+
+        # Now shutdown the logger (stops worker, flushes queue, closes files)
+        action_logger.shutdown()
+
+        # Clean up MCP connections if they exist
+        if hasattr(context.agent, 'mcp_client') and context.agent.mcp_client:
+            await context.agent.mcp_client.disconnect_all()
+
         sys.exit(0)
 
 

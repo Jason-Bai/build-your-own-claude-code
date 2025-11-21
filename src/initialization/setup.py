@@ -16,6 +16,8 @@ from ..events import EventBus, EventType, Event
 from ..persistence.manager import PersistenceManager
 from ..persistence.storage import JSONStorage, SQLiteStorage, BaseStorage
 from ..sessions.manager import SessionManager
+from ..logging import init_logger, get_action_logger, setup_logging_event_listener
+from ..logging.masking import DataMasker
 
 
 def create_storage_from_config(config: dict) -> BaseStorage:
@@ -31,9 +33,50 @@ def create_storage_from_config(config: dict) -> BaseStorage:
         return JSONStorage(project_name, base_dir)
 
 
+def initialize_logging_from_config(config: dict) -> None:
+    """Initialize logging system from configuration"""
+    logging_config = config.get("logging", {})
+
+    # Extract logging settings with defaults
+    enabled = logging_config.get("enabled", True)
+    log_dir = Path(logging_config.get("log_dir", "~/.tiny-claude-code/logs")).expanduser()
+    queue_size = logging_config.get("queue_size", 1000)
+    batch_size = logging_config.get("batch_size", 100)
+    batch_timeout = logging_config.get("batch_timeout", 1.0)
+
+    # Extract masking settings
+    masking_config = logging_config.get("masking", {})
+    masking_enabled = masking_config.get("enabled", True)
+    truncate_large_output = masking_config.get("truncate_large_output", True)
+    max_output_chars = masking_config.get("max_output_chars", 10000)
+    sensitive_fields = masking_config.get("sensitive_fields", [])
+
+    # Create masker with custom settings
+    masker = DataMasker(
+        enabled=masking_enabled,
+        truncate_large_output=truncate_large_output,
+        max_output_chars=max_output_chars,
+        custom_sensitive_fields=sensitive_fields
+    )
+
+    # Initialize logger
+    init_logger(
+        log_dir=log_dir,
+        enabled=enabled,
+        queue_size=queue_size,
+        batch_size=batch_size,
+        batch_timeout=batch_timeout,
+        masker=masker
+    )
+
+
 async def initialize_agent(config: dict = None, args=None) -> EnhancedAgent:
     """初始化 EnhancedAgent"""
     config = config or {}
+
+    # P11: Initialize logging system from config
+    initialize_logging_from_config(config)
+
     model_config = config.get("model", {})
     providers_config = config.get("providers", {})
 
@@ -161,6 +204,13 @@ async def _load_user_hooks(hook_manager: HookManager, verbose: bool = False) -> 
 
 
 async def _setup_event_listeners(event_bus: EventBus):
+    # P11: Setup logging event listener for action logging
+    action_logger = get_action_logger()
+    logging_listener = setup_logging_event_listener(event_bus, action_logger)
+
+    # Store listener on event_bus for later access
+    event_bus._logging_listener = logging_listener
+
     async def on_tool_selected(event: Event):
         tool_name = event.data.get("tool_name", "Unknown")
         brief_description = event.data.get("brief_description", "")

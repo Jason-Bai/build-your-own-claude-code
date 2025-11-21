@@ -29,6 +29,9 @@ from .output_commands import (
     VerboseCommand,
     QuietCommand
 )
+from .logging_commands import (
+    LogCommand
+)
 
 
 def register_builtin_commands():
@@ -53,6 +56,8 @@ def register_builtin_commands():
     # Output commands
     command_registry.register(VerboseCommand())
     command_registry.register(QuietCommand())
+    # Logging commands
+    command_registry.register(LogCommand())
 
 
 __all__ = [

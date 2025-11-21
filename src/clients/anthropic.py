@@ -64,13 +64,18 @@ class AnthropicClient(BaseClient):
                     "input": block.input
                 })
 
-        return ModelResponse(
+        # 安全地提取 usage 信息
+        usage = {"input_tokens": 0, "output_tokens": 0}
+        if hasattr(response, 'usage') and response.usage:
+            usage = {
+                "input_tokens": getattr(response.usage, 'input_tokens', 0),
+                "output_tokens": getattr(response.usage, 'output_tokens', 0)
+            }
+
+        return self._safe_create_response(
             content=content,
             stop_reason=response.stop_reason,
-            usage={
-                "input_tokens": response.usage.input_tokens,
-                "output_tokens": response.usage.output_tokens
-            },
+            usage=usage,
             model=response.model
         )
 

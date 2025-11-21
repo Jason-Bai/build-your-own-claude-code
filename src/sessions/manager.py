@@ -6,17 +6,28 @@ from typing import Optional, List, Dict
 
 from .types import Session
 from ..persistence.manager import PersistenceManager
+from ..logging import get_action_logger
+from ..logging.types import ActionType
 
 
 class SessionManager:
     """Manages session creation, loading, saving, and state transitions"""
 
-    def __init__(self, persistence_manager: PersistenceManager):
+    def __init__(self, persistence_manager: PersistenceManager, action_logger=None):
         """Initialize SessionManager with persistence backend"""
         self.persistence = persistence_manager
         self.current_session: Optional[Session] = None
+        self.logger = action_logger or get_action_logger()
 
     # ========== Session Lifecycle Methods ==========
+
+    def get_current_session_id(self) -> Optional[str]:
+        """Get current session ID
+
+        Returns:
+            Current session ID or None if no active session
+        """
+        return self.current_session.session_id if self.current_session else None
 
     def start_session(self, project_name: str, session_id: Optional[str] = None) -> Session:
         """Start a new session or load an existing one"""
@@ -35,28 +46,94 @@ class SessionManager:
             project_name=project_name,
             start_time=now
         )
+
+        # Log session start
+        self.logger.log(
+            action_type=ActionType.SESSION_START,
+            session_id=self.current_session.session_id,
+            project_name=project_name,
+            start_time=self.current_session.start_time.isoformat()
+        )
+
         return self.current_session
 
     def end_session(self) -> None:
-        """End current session"""
+        """End current session (synchronous version)"""
         if self.current_session:
             self.current_session.end_time = datetime.now()
             self.current_session.status = "completed"
+
+            # Log session end
+            self.logger.log(
+                action_type=ActionType.SESSION_END,
+                session_id=self.current_session.session_id,
+                end_time=self.current_session.end_time.isoformat(),
+                duration_seconds=(self.current_session.end_time - self.current_session.start_time).total_seconds()
+            )
+
             self._save_session_sync()
             self.current_session = None
 
-    def pause_session(self) -> None:
-        """Pause current session"""
+    async def end_session_async(self) -> None:
+        """End current session (asynchronous version)"""
+        if self.current_session:
+            self.current_session.end_time = datetime.now()
+            self.current_session.status = "completed"
+
+            # Log session end
+            self.logger.log(
+                action_type=ActionType.SESSION_END,
+                session_id=self.current_session.session_id,
+                end_time=self.current_session.end_time.isoformat(),
+                duration_seconds=(self.current_session.end_time - self.current_session.start_time).total_seconds()
+            )
+
+            await self.save_session_async()
+            self.current_session = None
+
+    def pause_session(self, reason: str = "user_request") -> None:
+        """Pause current session
+
+        Args:
+            reason: Pause reason (user_request, permission_request, etc.)
+        """
         if self.current_session:
             self.current_session.status = "paused"
+
+            # Log session pause
+            self.logger.log(
+                action_type=ActionType.SESSION_PAUSE,
+                session_id=self.current_session.session_id,
+                pause_time=datetime.now().isoformat(),
+                reason=reason
+            )
+
             self._save_session_sync()
 
     def resume_session(self, session_id: str) -> Session:
-        """Resume a paused session"""
+        """Resume a paused session
+
+        Args:
+            session_id: Session ID to resume
+
+        Returns:
+            Resumed session
+
+        Raises:
+            ValueError: If session not found
+        """
         session_data = self._load_session_sync(session_id)
         if session_data:
             self.current_session = Session.from_dict(session_data)
             self.current_session.status = "active"
+
+            # Log session resume
+            self.logger.log(
+                action_type=ActionType.SESSION_RESUME,
+                session_id=self.current_session.session_id,
+                resume_time=datetime.now().isoformat()
+            )
+
             return self.current_session
         else:
             raise ValueError(f"Session not found: {session_id}")

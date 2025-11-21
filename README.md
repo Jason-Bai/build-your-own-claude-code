@@ -16,6 +16,7 @@ A production-ready, feature-complete AI coding assistant implementation that dem
 - **Rich CLI Commands** - 15 command system with aliases, conversation management, workflow support
 - **Reactive UI System** - Seamless mode switching between reactive display and interactive input
 - **3-Tier Permission System** - SAFE/NORMAL/DANGEROUS with 4 access control modes
+- **Structured Action Logging** - Comprehensive event tracking, async queue processing, data masking, query/analysis tools
 
 ## 🚀 Quick Start
 
@@ -111,6 +112,7 @@ This project uses a layered architecture design that decomposes complex AI Agent
 - **Hook System**: 19 hook event types with priority-based execution
 - **Session Management**: Automatic persistence, command history tracking, session restoration
 - **Checkpoint & Recovery**: Step-level checkpoints, context snapshots, state restoration
+- **Action Logging System**: Async queue + background worker, 17 ActionTypes, data masking, JSON Lines format with daily rotation
 
 For detailed architecture design, data flow, Agent state machine and more:
 
@@ -118,7 +120,7 @@ For detailed architecture design, data flow, Agent state machine and more:
 
 ## 🧪 Testing
 
-This project includes a comprehensive test suite with **1,167 tests** (99.9% passing) and **66% code coverage**.
+This project includes a comprehensive test suite with **1,800+ tests** and **70%+ code coverage**.
 
 ### Test Organization
 
@@ -160,16 +162,18 @@ pytest tests/ --cov=src --cov-report=html
 
 ### Test Distribution
 
-- **Unit Tests**: 1,000+ tests in `tests/unit/` (41 files)
+- **Unit Tests**: 1,600+ tests in `tests/unit/`
   - Agent System: 97+ tests (state management, context, feedback, permissions)
   - LLM Clients: 35+ tests (Anthropic, OpenAI, Kimi, base client, factory)
   - Tool System: 135+ tests (executor, file ops, bash, search, todo, web search)
   - Hook System: 70+ tests (types, manager, builder, validator, config loader)
   - Commands: 60+ tests (builtin, persistence, workspace, session)
   - Session Manager: 53 tests (manager, types, commands, performance)
+  - Logging System: 603 tests (action logger, data masking, maintenance, query)
   - UI System: Tests for reactive UI, UI coordinator, UI manager
-- **Integration Tests**: 1 test file in `tests/integration/`
+- **Integration Tests**: 2 test files in `tests/integration/`
   - Web Search: Real DDGS API integration tests
+  - Logging Integration: End-to-end logging workflows
 - **E2E Tests**: Planned in `tests/e2e/`
 
 ### Coverage by Module

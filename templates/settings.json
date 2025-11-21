@@ -20,6 +20,35 @@
     "storage_type": "json",
     "base_dir": "~/.tiny-claude-code"
   },
+  "logging": {
+    "enabled": true,
+    "log_dir": "~/.tiny-claude-code/logs",
+    "queue_size": 1000,
+    "batch_size": 100,
+    "batch_timeout": 1.0,
+    "masking": {
+      "enabled": true,
+      "truncate_large_output": true,
+      "max_output_chars": 10000,
+      "sensitive_fields": [
+        "password",
+        "api_key",
+        "token",
+        "secret",
+        "apiKey",
+        "accessToken",
+        "privateKey",
+        "credentials",
+        "authorization"
+      ]
+    },
+    "maintenance": {
+      "enabled": true,
+      "retention_days": 30,
+      "max_size_mb": 1000,
+      "compress_after_days": 7
+    }
+  },
   "mcp_servers": [],
   "max_turns": 20,
   "web_search": {

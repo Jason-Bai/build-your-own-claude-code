@@ -7,6 +7,8 @@ from typing import Dict, Set, Tuple, Optional
 from enum import Enum
 
 from ..events import EventBus, Event, EventType, get_event_bus
+from ..logging import get_action_logger
+from ..logging.types import ActionType
 
 
 class PermissionMode(Enum):
@@ -26,6 +28,7 @@ class PermissionManager:
         self.mode = mode
         self.config = config or {}
         self.event_bus = event_bus or get_event_bus()
+        self.action_logger = get_action_logger()
 
         # 从配置加载预设权限
         self.approved_tools: Set[str] = set(
@@ -130,21 +133,61 @@ class PermissionManager:
                     choice = input("Your choice: ").lower().strip()
 
                     if choice == 'y':
+                        # Log permission granted
+                        self.action_logger.log(
+                            action_type=ActionType.TOOL_PERMISSION,
+                            tool_name=tool.name,
+                            permission_level=tool.permission_level.value,
+                            user_decision="approved",
+                            decision_type="once"
+                        )
                         return True, ""
                     elif choice == 'n':
+                        # Log permission denied
+                        self.action_logger.log(
+                            action_type=ActionType.TOOL_PERMISSION,
+                            tool_name=tool.name,
+                            permission_level=tool.permission_level.value,
+                            user_decision="denied",
+                            decision_type="once"
+                        )
                         return False, "Permission denied by user"
                     elif choice == 'a':
                         self.approved_tools.add(tool.name)
                         print(f"✓ Will always allow '{tool.name}' in this session")
+                        # Log permission always approved
+                        self.action_logger.log(
+                            action_type=ActionType.TOOL_PERMISSION,
+                            tool_name=tool.name,
+                            permission_level=tool.permission_level.value,
+                            user_decision="approved",
+                            decision_type="always"
+                        )
                         return True, ""
                     elif choice == 'v':
                         self.denied_tools.add(tool.name)
                         print(f"✓ Will never allow '{tool.name}' in this session")
+                        # Log permission never allowed
+                        self.action_logger.log(
+                            action_type=ActionType.TOOL_PERMISSION,
+                            tool_name=tool.name,
+                            permission_level=tool.permission_level.value,
+                            user_decision="denied",
+                            decision_type="never"
+                        )
                         return False, "Permission denied by user"
                     else:
                         print("Invalid choice. Please enter y/n/a/v")
                 except (EOFError, KeyboardInterrupt):
                     print("\n")
+                    # Log permission interrupted
+                    self.action_logger.log(
+                        action_type=ActionType.TOOL_PERMISSION,
+                        tool_name=tool.name,
+                        permission_level=tool.permission_level.value,
+                        user_decision="interrupted",
+                        decision_type="interrupted"
+                    )
                     return False, "Permission request interrupted"
 
         finally:

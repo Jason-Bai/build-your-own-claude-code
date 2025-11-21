@@ -11,6 +11,8 @@ from ..config.args import parse_args
 from ..initialization.setup import initialize_agent, _setup_event_listeners
 from .exceptions import SessionPausedException
 from .ui_coordinator import init_coordinator
+from ..logging import get_action_logger
+from ..logging.types import ActionType
 
 
 async def main():
@@ -45,7 +47,7 @@ async def main():
     register_builtin_commands()
 
     # Create CLI context
-    cli_context = CLIContext(agent, config={})
+    cli_context = CLIContext(agent, config=config)
 
     # Load project context from CLAUDE.md if present
     claude_md_path = Path.cwd() / "CLAUDE.md"
@@ -66,7 +68,11 @@ async def main():
     session_manager = agent.session_manager
     project_name = Path.cwd().name
     session = session_manager.start_session(project_name)
-    
+
+    # P11: Set session_manager in action_logger for automatic session_id resolution
+    action_logger = get_action_logger()
+    action_logger.set_session_manager(session_manager)
+
     # Display Welcome Message
     if OutputFormatter.level != OutputLevel.QUIET:
         OutputFormatter.display_welcome_message(session.session_id)
@@ -94,9 +100,25 @@ async def main():
                 if not user_input:
                     continue
 
+                # Auto-resume session if it was paused (from ESC key)
+                if session_manager.current_session and session_manager.current_session.is_paused():
+                    session_manager.resume_session(session_manager.current_session.session_id)
+                    OutputFormatter.info("Session resumed.")
+
+                # P11: Get logger for action logging
+                action_logger = get_action_logger()
+
                 # Check if it's a command
                 if command_registry.is_command(user_input):
                     session_manager.record_command(user_input)
+
+                    # P11: Log user command
+                    action_logger.log(
+                        action_type=ActionType.USER_COMMAND,
+                        session_id=session.session_id,
+                        command=user_input
+                    )
+
                     result = await command_registry.execute(user_input, cli_context)
                     if result:
                         OutputFormatter.print_assistant_response(result)
@@ -104,6 +126,13 @@ async def main():
 
                 # Record user input in session
                 session_manager.record_command(user_input)
+
+                # P11: Log user input
+                action_logger.log(
+                    action_type=ActionType.USER_INPUT,
+                    session_id=session.session_id,
+                    content=user_input
+                )
 
                 # Otherwise, send to agent
                 # Note: UI Manager handles the "Thinking..." and tool execution visualization
@@ -132,7 +161,10 @@ async def main():
 
             except SessionPausedException:
                 # Handle ESC key pause
+                # Log session pause (user requested via ESC key)
+                session_manager.pause_session(reason="user_input_paused")
                 OutputFormatter.info("\nSession paused. Input cleared.")
+                # Note: Session will auto-resume on next input
                 continue
             except KeyboardInterrupt:
                 OutputFormatter.info("Use /exit to quit properly")
@@ -147,17 +179,29 @@ async def main():
                 OutputFormatter.info("Type /clear to reset if needed")
 
     finally:
-        # End session (always enabled in production)
-        try:
-            session_manager.end_session()
-            OutputFormatter.info("📝 Session saved and closed")
-        except Exception as e:
-            OutputFormatter.warning(f"Failed to save session: {e}")
+        # Clean up on abnormal exit (EOFError, exceptions)
+        # Note: Normal exit via /exit command handles cleanup in ExitCommand
+        from ..logging.constants import DEFAULT_BATCH_TIMEOUT
+        import time
 
-        # Clean up MCP connections
-        if agent.mcp_client:
-            OutputFormatter.info("Disconnecting MCP servers...")
-            await agent.mcp_client.disconnect_all()
+        # Check if session still exists - if so, this is an abnormal exit
+        if session_manager.current_session:
+            try:
+                await session_manager.end_session_async()
+            except Exception as e:
+                OutputFormatter.warning(f"Failed to save session: {e}")
+
+            # Wait for worker thread to process logs
+            wait_time = DEFAULT_BATCH_TIMEOUT + 0.5
+            time.sleep(wait_time)
+
+            # Shutdown logger (stops worker, flushes queue, closes files)
+            action_logger.shutdown()
+
+            # Clean up MCP connections
+            if agent.mcp_client:
+                OutputFormatter.info("Disconnecting MCP servers...")
+                await agent.mcp_client.disconnect_all()
 
 
 def cli():

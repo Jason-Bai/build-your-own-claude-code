@@ -23,6 +23,10 @@ from ..checkpoint.recovery import ExecutionRecovery
 from ..checkpoint.tracker import ExecutionTracker
 from ..checkpoint.types import Checkpoint, ExecutionResult
 
+# P11 Imports - Logging
+from ..logging import get_action_logger
+from ..logging.types import ActionType
+
 if TYPE_CHECKING:
     from ..mcps import MCPClient
 
@@ -64,6 +68,9 @@ class EnhancedAgent:
         self.todo_manager = TodoManager()
         self._hook_context_builder: Optional[HookContextBuilder] = None
 
+        # P11: Action Logger
+        self.action_logger = get_action_logger()
+
         # 设置系统提示
         if system_prompt:
             self.context_manager.set_system_prompt(system_prompt)
@@ -87,6 +94,14 @@ class EnhancedAgent:
         """状态转换，触发回调"""
         old_state = self.state_manager.current_state
         self.state_manager.transition_to(new_state)
+
+        # P11: Log state change
+        self.action_logger.log(
+            action_type=ActionType.AGENT_STATE_CHANGE,
+            from_state=old_state.value,
+            to_state=new_state.value,
+            reason="user_request"
+        )
 
         # Emit state change event for UI
         await self.event_bus.emit(Event(
@@ -144,8 +159,10 @@ class EnhancedAgent:
 
             try:
                 response = await self._call_llm()
+                # 安全地提取 token 使用量
+                usage = response.usage or {}
                 self.state_manager.add_tokens(
-                    response.usage.get("input_tokens", 0), response.usage.get("output_tokens", 0)
+                    usage.get("input_tokens", 0), usage.get("output_tokens", 0)
                 )
                 text_blocks, tool_uses = self._parse_response(response)
                 final_response = text_blocks[0] if text_blocks else ""
@@ -246,13 +263,62 @@ class EnhancedAgent:
             )
         )
 
-        return await self.client.create_message(
-            system=self.context_manager.system_prompt,
-            messages=self.context_manager.get_messages(),
-            tools=self.tool_manager.get_tool_definitions(),
-            max_tokens=8000,
-            stream=False
+        # P11: Log agent thinking
+        import time
+        thinking_start = time.time()
+        self.action_logger.log(
+            action_type=ActionType.AGENT_THINKING,
+            message_count=len(self.context_manager.get_messages()),
+            tool_count=len(self.tool_manager.get_tool_definitions())
         )
+
+        # P11: Log LLM request
+        messages = self.context_manager.get_messages()
+        tools = self.tool_manager.get_tool_definitions()
+        self.action_logger.log(
+            action_type=ActionType.LLM_REQUEST,
+            provider=self.client.provider_name,
+            model=self.client.model_name,
+            messages_count=len(messages),
+            tools_count=len(tools),
+            max_tokens=8000
+        )
+
+        try:
+            response = await self.client.create_message(
+                system=self.context_manager.system_prompt,
+                messages=messages,
+                tools=tools,
+                max_tokens=8000,
+                stream=False
+            )
+
+            # P11: Log LLM response
+            usage = response.usage or {}
+            self.action_logger.log(
+                action_type=ActionType.LLM_RESPONSE,
+                provider=self.client.provider_name,
+                model=response.model,
+                stop_reason=response.stop_reason,
+                input_tokens=usage.get("input_tokens", 0),
+                output_tokens=usage.get("output_tokens", 0),
+                content_blocks=len(response.content)
+            )
+
+            return response
+
+        except Exception as e:
+            # P11: Log LLM error
+            self.action_logger.log(
+                action_type=ActionType.LLM_ERROR,
+                status="error",
+                provider=self.client.provider_name,
+                model=self.client.model_name,
+                error=str(e),
+                error_type=type(e).__name__
+            )
+            # Re-raise to be handled by outer exception handler
+            raise
 
     def _parse_response(self, response: ModelResponse) -> tuple[List[str], List[Dict]]:
         """解析 LLM 响应"""
@@ -315,6 +381,14 @@ class EnhancedAgent:
                 input=tool_input
             )
             self.state_manager.record_tool_call(tool_call)
+
+            # P11: Log tool call
+            self.action_logger.log(
+                action_type=ActionType.TOOL_CALL,
+                tool_name=tool_name,
+                tool_id=tool_id,
+                tool_input=tool_input
+            )
 
             # 生成简短描述用于反馈
             brief_description = self._generate_brief_description(tool_name, tool_input)
@@ -440,6 +514,15 @@ class EnhancedAgent:
                     output=result.output
                 ))
 
+                # P11: Log successful tool result
+                self.action_logger.log(
+                    action_type=ActionType.TOOL_RESULT,
+                    tool_name=tool_name,
+                    tool_id=tool_id,
+                    output=result.output,
+                    metadata=result.metadata or {}
+                )
+
                 await self.hook_manager.trigger(
                     HookEvent.ON_TOOL_RESULT,
                     self._hook_context_builder.build(
@@ -460,6 +543,16 @@ class EnhancedAgent:
                     tool_id=tool_id,
                     error=result.error
                 ))
+
+                # P11: Log tool error
+                self.action_logger.log(
+                    action_type=ActionType.TOOL_ERROR,
+                    status="error",
+                    tool_name=tool_name,
+                    tool_id=tool_id,
+                    error=result.error,
+                    metadata=result.metadata or {}
+                )
 
                 await self.hook_manager.trigger(
                     HookEvent.ON_TOOL_ERROR,
