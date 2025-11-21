@@ -199,6 +199,74 @@ Define in `~/.tiny-claude/settings.json`:
    - ❌ `tests/manual/` - Convert to `tests/integration/` with pytest
    - ❌ Root `tests/` directory for test files - Always use subdirectories
 
+### Temporary Test Files Standard
+
+⚠️ **Temporary test files MUST be managed properly:**
+
+1. **Purpose**:
+
+   - For manual testing, debugging, and experimentation
+   - Quick validation of features or bug reproduction
+   - NOT for permanent test suites (use `tests/` directories instead)
+
+2. **Naming Convention**:
+
+   - Prefix with `test_` for easy identification
+   - Use descriptive names indicating purpose
+   - Examples:
+     - ✅ `test_ui_workflow.py` - Testing UI interaction flow
+     - ✅ `test_consecutive_queries.py` - Testing multiple queries
+     - ✅ `test_session_restore.py` - Testing session restoration
+     - ❌ `temp.py` - Too vague
+     - ❌ `debug.py` - Not following convention
+
+3. **Location**:
+
+   - ✅ **Project root directory** (for visibility and easy cleanup)
+   - ❌ Do NOT place in `tests/` directories (reserved for permanent tests)
+   - ❌ Do NOT place in `src/` directories (pollutes source code)
+
+4. **Lifecycle Management**:
+
+   - **Create**: When you need to manually test something
+   - **Use**: Run and iterate during development
+   - **DELETE**: Immediately after testing is complete
+   - **Convert**: If test is valuable, convert to proper unit/integration test
+
+5. **Git Guidelines**:
+
+   - **Default**: Temporary files SHOULD NOT be committed
+   - **Exception**: If needed for collaboration, commit with clear message
+   - **Cleanup**: Delete in the same or next commit
+   - **Best Practice**: Add `test_*.py` to `.gitignore` if frequently created
+
+6. **Commit Checklist** (see Git Commit Standards below):
+   - Before running `/commit`, check for temporary test files
+   - Delete all `test_*.py` files in root directory
+   - Or explicitly document why they're being committed
+
+**Why This Matters**:
+
+- Prevents repository pollution with temporary files
+- Avoids confusion between temporary and permanent tests
+- Keeps git history clean
+- Maintains clear separation of concerns
+
+**Example Workflow**:
+
+```bash
+# Create temporary test file
+$ touch test_new_feature.py
+# ... write test code, run it ...
+
+# After testing is done, DELETE it:
+$ rm test_new_feature.py
+
+# Or if it's valuable, convert to proper test:
+$ mv test_new_feature.py tests/unit/test_new_feature.py
+# ... adapt to pytest format ...
+```
+
 ### Git Commit Standards
 
 📝 **All commits MUST follow these rules:**
@@ -234,10 +302,16 @@ Define in `~/.tiny-claude/settings.json`:
    - Use `--no-verify` only in exceptional cases
 
 5. **Commit Message Guidelines**:
+
    - Present tense, imperative mood ("add" not "added")
    - First line < 72 characters
    - Include context in body for complex changes
    - Reference issues/PRs when applicable
+
+6. **Temporary Test Files** (see Temporary Test Files Standard above):
+   - **Check for `test_*.py` files in root directory before committing**
+   - Delete temporary test files or document why they're being committed
+   - If committed for collaboration, mark for cleanup in commit message
 
 **Why This Matters**:
 
@@ -342,6 +416,7 @@ The report consolidates learnings from multiple hotfix docs into one executive s
 - Open source ecosystem alignment
 - Clear test separation (fast unit tests vs slow integration tests)
 - Easy to run specific test categories
+- **Clean repository without temporary files** (Temporary Test Files Standard)
 - **Consistent commit history and quality** (Git Commit Standards)
 - **Centralized knowledge and decision documentation** (Report Generation Standards)
 
