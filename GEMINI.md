@@ -313,6 +313,12 @@ $ mv test_new_feature.py tests/unit/test_new_feature.py
    - Delete temporary test files or document why they're being committed
    - If committed for collaboration, mark for cleanup in commit message
 
+7. **Documentation Updates** (see Documentation Update Standard below):
+   - **Check if README.md/README_zh.md need updates before committing**
+   - AI assistant will proactively detect and offer to draft updates
+   - Ensure both English and Chinese versions are synchronized
+   - Pre-commit hooks will warn if documentation appears outdated
+
 **Why This Matters**:
 
 - Enables automatic changelog generation
@@ -334,6 +340,140 @@ $ mv test_new_feature.py tests/unit/test_new_feature.py
 # 3. Analyze changes and suggest splits if needed
 # 4. Generate appropriate commit message
 # 5. Create the commit with proper format
+```
+
+### Documentation Update Standard
+
+📚 **README and documentation MUST be updated for significant changes:**
+
+1. **When to Update README**:
+
+   - ✅ After adding a new feature (Phase 2+)
+   - ✅ After changing architecture or core components
+   - ✅ After adding/removing dependencies
+   - ✅ After modifying CLI commands or configuration
+   - ✅ After changing testing structure or requirements
+   - ✅ After fixing critical bugs that affect user behavior
+   - ✅ After updating development setup or workflows
+
+2. **README Sections to Check**:
+
+   - **Features** - List of capabilities and functionality
+   - **Architecture** - System design and component structure
+   - **Testing** - Test organization and running instructions
+   - **Configuration** - Settings and environment variables
+   - **Available Commands** - CLI commands and usage
+   - **Quick Troubleshooting** - Common issues and solutions
+   - **Technology Stack** - Dependencies and versions
+
+3. **Multi-Language Consistency**:
+
+   - Both `README.md` (English) and `README_zh.md` (Chinese) MUST be updated together
+   - Maintain parallel structure and equivalent content
+   - Don't leave one version outdated
+
+4. **AI Assistant Responsibility** (for Claude Code):
+   When user runs `/commit`, the AI assistant MUST:
+
+   a. **Detect documentation impact**:
+   ```python
+   # Check if README update is needed
+   staged_files = get_staged_files()
+   if any(f.startswith('src/') for f in staged_files):
+       if not any('README' in f for f in staged_files):
+           # Proactively ask user about documentation
+   ```
+
+   b. **Analyze specific sections needing updates**:
+   - New files in `src/tools/` → Update "Features" list
+   - Changes to `src/agents/` → Check "Architecture" section
+   - New tests in `tests/` → Update "Testing" section
+   - Modified `.py` files with CLI commands → Update "Available Commands"
+   - Changes to settings/config → Update "Configuration" section
+
+   c. **Offer to draft updates**:
+   "⚠️  I notice you modified [specific files].
+
+   The following README sections may need updates:
+     • Features - Add description of [new feature]
+     • Testing - Update test count from X to Y
+     • Architecture - Explain [architectural change]
+
+   Should I draft these README updates for you? (y/n)"
+
+   d. **Ensure bilingual updates**:
+
+   - Draft updates for both README.md and README_zh.md
+   - Maintain consistent formatting and structure
+   - Preserve existing translation style
+
+5. **User Responsibility**:
+
+   - **Prefer `/commit` command** for AI-assisted documentation checks
+   - Review AI-drafted documentation changes for accuracy
+   - Explicitly ask "Does this need README update?" if unsure
+   - Ensure technical accuracy of AI-generated content
+   - Final approval of all documentation changes
+
+6. **Pre-Commit Safety Net** (Git Hook):
+
+   A pre-commit hook will check for missing documentation:
+
+   ```bash
+   #!/bin/bash
+   # .git/hooks/pre-commit
+
+   # Check if src/ changed without README updates
+   if git diff --cached --name-only | grep -q "^src/"; then
+       if ! git diff --cached --name-only | grep -q "README"; then
+           echo "⚠️  Warning: You modified src/ but didn't update README"
+           echo "Consider running: /commit (for AI assistance)"
+           exit 1
+       fi
+   fi
+   ```
+
+**Why This Matters**:
+
+- Prevents documentation drift and outdated information
+- Reduces friction for new contributors and users
+- Maintains professional project appearance
+- Ensures bilingual consistency for global audience
+- AI does the heavy lifting, user just reviews
+- Git hooks catch cases where AI workflow is bypassed
+
+**Example Workflow**:
+
+```bash
+# Step 1: Implement new Session Manager feature
+You: [Write code in src/tools/session_manager.py]
+
+# Step 2: Try to commit
+You: "/commit"
+
+# Step 3: AI detects missing documentation
+Claude: "⚠️  I notice you added src/tools/session_manager.py but didn't update README.
+
+The following sections likely need updates:
+  • Features - Add Session Manager to tool list
+  • Configuration - Document session storage settings
+  • Available Commands - Add /save and /load commands
+
+Should I draft these README updates for you? (y/n)"
+
+# Step 4: AI drafts updates in both languages
+You: "y"
+Claude: "Analyzing changes... drafting updates...
+
+[Shows diff of proposed changes]
+"Look good? (y/n)"
+
+# Step 5: User reviews and confirms
+You: "y"
+
+# Step 6: AI commits everything together
+Claude: "Creating commit with code + documentation..."
+✅ Committed: feat: add Session Manager with updated docs
 ```
 
 ### Report Generation Standards
@@ -419,6 +559,7 @@ The report consolidates learnings from multiple hotfix docs into one executive s
 - **Clean repository without temporary files** (Temporary Test Files Standard)
 - **Consistent commit history and quality** (Git Commit Standards)
 - **Centralized knowledge and decision documentation** (Report Generation Standards)
+- **Up-to-date documentation with minimal friction** (Documentation Update Standard)
 
 ---
 
