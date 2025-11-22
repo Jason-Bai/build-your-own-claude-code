@@ -145,31 +145,159 @@ Define in `~/.tiny-claude/settings.json`:
 - CLAUDE.md can remain bilingual (internal context)
 - Internal config files can have Chinese comments
 
-### Design Document Standards
+### Three-Document Workflow
 
-📋 **Design documents must follow these rules:**
+🔄 **For every feature or hotfix, follow this workflow:**
 
-1. **Location**: All feature design documents MUST be placed in `docs/features/vX.X.X/`
+#### Workflow Overview
 
-   - Example: `docs/features/v0.0.1/`, `docs/features/v1.0.0/`
+```
+Design → Implementation → Review
+   ↓           ↓            ↓
+  📋          🛠️           ✅
+```
 
-2. **Naming Convention**: File names MUST follow the pattern `pX-feature-name.md`
+#### Phase 1: Design Document
 
-   - `p` = phase number (lowercase)
-   - `X` = phase number (digit)
-   - `feature-name` = descriptive kebab-case name
-   - Examples:
-     - ✅ `p1-input-enhancement.md`
-     - ✅ `p8-session-manager.md`
-     - ✅ `p10-web-search-tool.md`
-     - ❌ `P1-input.md` (uppercase P)
-     - ❌ `phase1-input.md` (wrong prefix)
-     - ❌ `input-enhancement.md` (missing pX prefix)
+**Naming Convention**: `pX-feature-name-design-document.md`
 
-3. **Version Folder**: Group related features by version milestone
-   - `v0.0.1/` - Initial release features
-   - `v0.1.0/` - Minor version features
-   - `v1.0.0/` - Major version features
+- `p` = phase number (lowercase)
+- `X` = phase number (digit)
+- `feature-name` = descriptive kebab-case name
+- Examples:
+  - ✅ `p1-input-enhancement-design-document.md`
+  - ✅ `p8-session-manager-design-document.md`
+  - ✅ `p10-web-search-tool-design-document.md`
+  - ❌ `P1-input.md` (uppercase P)
+  - ❌ `phase1-input.md` (wrong prefix)
+  - ❌ `input-enhancement.md` (missing pX prefix)
+
+**Location**: `docs/features/vX.X.X/pX-feature-name-design-document.md`
+
+- `v0.0.1/` - Initial release features
+- `v0.1.0/` - Minor version features
+- `v1.0.0/` - Major version features
+
+**Purpose**: Define the problem, requirements, technical solution, and MVP scope
+
+**Key Sections**:
+
+- Problem Statement (background, pain points, goals)
+- Requirements Analysis (functional, non-functional, boundaries)
+- Technical Solution (architecture, modules, data structures)
+- MVP Definition (must-have vs should-have vs nice-to-have)
+- Risk Assessment (technical, resource, dependency risks)
+- Acceptance Criteria
+
+**Template**: [`templates/docs/design-document-template.md`](../templates/docs/design-document-template.md)
+
+**When**: Before starting any implementation work
+
+---
+
+#### Phase 2: Implementation Plan
+
+**Naming Convention**: `pX-feature-name-implement-plan.md`
+
+- `p` = phase number (lowercase)
+- `X` = phase number (digit)
+- `feature-name` = descriptive kebab-case name (same as design doc)
+- Examples:
+  - ✅ `p1-input-enhancement-implement-plan.md`
+  - ✅ `p8-session-manager-implement-plan.md`
+  - ✅ `p10-web-search-tool-implement-plan.md`
+
+**Location**: `docs/features/vX.X.X/pX-feature-name-implement-plan.md` (same folder as design doc)
+
+**Purpose**: Detailed step-by-step implementation guide with file checklists and testing strategy
+
+**Key Sections**:
+
+- Implementation Steps (P0/P1/P2 priority breakdown)
+- File Checklist (new files + modified files with line numbers)
+- Core Logic Implementation (code examples)
+- Testing Strategy (unit, integration, performance tests)
+- Definition of Done (functional, testing, code quality, documentation)
+- Progress Tracking
+
+**Template**: [`templates/docs/implementation-plan-template.md`](../templates/docs/implementation-plan-template.md)
+
+**Links Back To**: Design document (at the top of the file)
+
+**When**: After design approval, before coding begins
+
+---
+
+#### Phase 3: Review Document
+
+**Naming Convention**: `pX-feature-name-review-document.md`
+
+- `p` = phase number (lowercase)
+- `X` = phase number (digit)
+- `feature-name` = descriptive kebab-case name (same as design doc and implement plan)
+- Examples:
+  - ✅ `p1-input-enhancement-review-document.md`
+  - ✅ `p8-session-manager-review-document.md`
+  - ✅ `p10-web-search-tool-review-document.md`
+
+**Location**: `docs/features/vX.X.X/pX-feature-name-review-document.md` (same folder as design doc and implement plan)
+
+**Purpose**: Post-implementation review with checklist verification, deviation analysis, and lessons learned
+
+**Key Sections**:
+
+- Executive Summary (metrics, final status)
+- Implementation Checklist (completed/partial/incomplete features)
+- Deviation Analysis (design changes, scope changes)
+- Test Results (unit, integration, performance, security)
+- Problems & Solutions (critical issues, root causes, prevention)
+- Lessons Learned (what worked, what didn't, technical debt)
+- Quality Metrics (code quality, documentation, user impact)
+
+**Template**: [`templates/docs/review-document-template.md`](../templates/docs/review-document-template.md)
+
+**Links Back To**: Both design document and implementation plan (at the top)
+
+**When**: After implementation is complete and tested
+
+---
+
+#### Workflow Benefits
+
+✅ **Ensures Stable Implementation**
+
+- Clear roadmap from start to finish
+- All requirements documented upfront
+- No surprise scope creep
+
+✅ **Easy Context Recovery**
+
+- Documents serve as project memory
+- AI assistants can quickly understand context
+- Easy handoff between team members
+
+✅ **MVP-First Approach**
+
+- Forces prioritization (P0/P1/P2)
+- Manages context window limits
+- Delivers value incrementally
+
+✅ **Knowledge Base**
+
+- Lessons learned captured for future reference
+- Technical decisions documented with rationale
+- Problems and solutions searchable
+
+#### Example File Structure
+
+```
+docs/features/v0.0.1/
+├── p8-session-manager-design-document.md      # Design Phase
+├── p8-session-manager-implement-plan.md       # Implementation Phase
+└── p8-session-manager-review-document.md      # Review Phase
+```
+
+---
 
 ### Test Organization Standards
 
@@ -309,6 +437,7 @@ $ mv test_new_feature.py tests/unit/test_new_feature.py
    - Reference issues/PRs when applicable
 
 6. **Temporary Test Files** (see Temporary Test Files Standard above):
+
    - **Check for `test_*.py` files in root directory before committing**
    - Delete temporary test files or document why they're being committed
    - If committed for collaboration, mark for cleanup in commit message
@@ -470,91 +599,6 @@ You: "y"
 Claude: "Creating commit with code + documentation..."
 ✅ Committed: feat: add Session Manager with updated docs
 ```
-
-### Report Generation Standards
-
-📊 **All summary reports MUST be placed in `docs/reports/`:**
-
-1. **Report Types and Locations**:
-
-   **Feature Reports** → `docs/reports/vX.X.X/{feature-name}-report.md`
-
-   - Post-implementation summaries of completed features
-   - Executive summary, implementation highlights, lessons learned
-   - Example: `docs/reports/v0.0.1/reactive-ui-report.md`
-
-   **Hotfix Reports** → `docs/reports/vYYYY.MM.DD/{issue-name}-report.md`
-
-   - Root cause analysis and post-mortem of bugs/issues
-   - Problem description, solution, prevention measures
-   - Example: `docs/reports/v2025.11.18/eval-security-report.md`
-
-   **Architecture Decision Records (ADRs)** → `docs/reports/adr-{NNN}-{decision-name}.md`
-
-   - Documentation of significant architectural decisions
-   - Context, decision, rationale, alternatives, consequences
-   - Example: `docs/reports/adr-001-event-driven-ui.md`
-
-2. **Report vs. Documentation**:
-
-   | Aspect      | Reports (`docs/reports/`)      | Documentation (`docs/features/`, `docs/hotfixes/`) |
-   | ----------- | ------------------------------ | -------------------------------------------------- |
-   | **Timing**  | After implementation           | Before/during implementation                       |
-   | **Purpose** | Summary & analysis             | Design & specification                             |
-   | **Content** | What happened, lessons learned | What to build, how to build                        |
-   | **Format**  | Executive summary style        | Technical spec style                               |
-
-3. **When to Create Reports**:
-
-   - ✅ After completing a Phase 2+ feature
-   - ✅ After fixing critical security issues
-   - ✅ When making significant architectural changes
-   - ✅ When consolidating multiple related hotfixes
-   - ❌ Don't create reports before implementation (use design docs)
-
-4. **Report Requirements**:
-
-   - Clear executive summary (1-2 paragraphs)
-   - Implementation highlights (key decisions)
-   - Test results and metrics (coverage, performance)
-   - Impact assessment (user, performance, security)
-   - Honest lessons learned (what worked, what didn't)
-   - Links to related design docs, PRs, issues
-
-5. **Report Templates**:
-   - See `docs/reports/README.md` for detailed templates
-   - Use appropriate template for each report type
-   - Include all required sections
-   - Keep reports concise (1-3 pages)
-
-**Why This Matters**:
-
-- Provides high-level context for stakeholders
-- Documents "why" decisions were made
-- Helps onboard new team members
-- Creates searchable knowledge base
-- Facilitates retrospectives and improvements
-
-**Example**:
-After implementing the reactive UI system, create:
-
-- Design docs: `docs/hotfixes/v2025.11.18/hf3-*.md` (during implementation)
-- Report: `docs/reports/v2025.11.18/reactive-ui-report.md` (after completion)
-
-The report consolidates learnings from multiple hotfix docs into one executive summary.
-
-### Benefits
-
-- Internationalization support for global developers
-- Better GitHub visibility and SEO
-- Unified codebase maintenance
-- Open source ecosystem alignment
-- Clear test separation (fast unit tests vs slow integration tests)
-- Easy to run specific test categories
-- **Clean repository without temporary files** (Temporary Test Files Standard)
-- **Consistent commit history and quality** (Git Commit Standards)
-- **Centralized knowledge and decision documentation** (Report Generation Standards)
-- **Up-to-date documentation with minimal friction** (Documentation Update Standard)
 
 ---
 
