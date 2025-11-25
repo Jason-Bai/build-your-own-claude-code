@@ -1,8 +1,13 @@
 # [PX/HFX] Feature/Fix Name - Review Report
 
-> **Template Version**: 1.0
+> **Template Version**: 2.0 (Added E2E Test Results and Documentation-Reality Gaps)
 > **Created**: YYYY-MM-DD
 > **Status**: Draft | In Review | Final
+>
+> **v2.0 Changes**:
+> - Added Section 4: E2E Test Results & Reality Gaps
+> - Added Section 4.4: Documentation-Reality Gaps Analysis
+> - Emphasizes gaps between design assumptions and actual behavior
 
 ---
 
@@ -160,9 +165,163 @@ Document any significant deviations from the original design document:
 
 ---
 
-## 4. Test Results
+## 4. E2E Test Results & Reality Gaps
 
-### 4.1 Unit Tests
+> **NEW in v2.0**: Document results of End-to-End tests and gaps between design and reality
+
+### 4.1 E2E Test Execution Summary
+
+**Test Results**:
+
+| Category | Tests Run | Passed | Failed | Skipped | Pass Rate |
+|----------|-----------|--------|--------|---------|-----------|
+| Permission Detection | 2 | 0 | 2 | 0 | 0% |
+| Core Functionality | 5 | 3 | 1 | 1 | 60% |
+| Edge Cases | 3 | 3 | 0 | 0 | 100% |
+| Platform-Specific | 2 | 2 | 0 | 0 | 100% |
+| **TOTAL** | **12** | **8** | **3** | **1** | **67%** |
+
+**E2E Scenarios Document**: [docs/features/vX.X.X/pX-xxx-e2e-scenarios.md](./pX-xxx-e2e-scenarios.md)
+
+### 4.2 Failed E2E Tests Analysis
+
+#### Test Failure 1: [e.g., Permission detection on startup]
+
+**Test**: `test_startup_shows_permission_status`
+
+**Expected Behavior** (from design):
+- If no permissions: Clear warning message displayed
+- CLI continues without crash
+
+**Actual Behavior**:
+- Warning appears in stderr but easy to miss
+- No user guidance on how to fix
+
+**Root Cause**:
+- Design assumed permission check was minor detail
+- Didn't specify user guidance requirements
+- Focused on architecture, not UX
+
+**Impact**: CRITICAL - Feature unusable without permissions
+
+**Fix Status**: ✅ Fixed / ⚠️ Workaround applied / ❌ Not yet fixed
+
+**Fix Description**:
+- Improved warning message with actionable steps
+- Added `/check-permissions` command
+- Documented in README
+
+---
+
+#### Test Failure 2: [e.g., ESC cancellation during LLM call]
+
+**Test**: `test_esc_cancels_llm_call`
+
+**Expected Behavior**: ESC cancels LLM within 1 second
+
+**Actual Behavior**: Cannot test automatically - subprocess cannot simulate real ESC key
+
+**Root Cause**:
+- Design didn't consider testability
+- Assumed manual testing was sufficient
+
+**Impact**: Medium - Cannot catch regressions automatically
+
+**Fix Status**: ⚠️ Workaround - Manual test checklist created
+
+---
+
+### 4.3 Manual Test Results
+
+For scenarios that cannot be automated:
+
+**Manual Test 1**: [e.g., Real ESC key press]
+- ✅ Tested on: macOS Terminal.app, iTerm2
+- ✅ Result: Works as expected
+- ⚠️ Note: Requires Accessibility permissions (documented)
+
+**Manual Test 2**: [e.g., Window focus detection]
+- ⚠️ Tested on: macOS Terminal.app
+- ❌ Result: Too restrictive - disabled by default
+- 💡 Lesson: Complex feature that wasn't needed
+
+### 4.4 Documentation-Reality Gaps
+
+> **Critical Section**: What did design docs assume vs what actually happened?
+
+#### Gap #1: [e.g., Permission handling incomplete]
+
+**Design Assumption**:
+> From design doc Section X.X: "[Quote the assumption]"
+
+**Reality**:
+- Actual behavior discovered during E2E testing
+- Problem X happened because Y
+
+**Why This Matters**:
+- Severity: CRITICAL / HIGH / MEDIUM / LOW
+- User Impact: [Concrete description]
+- Time to discover: Found during E2E testing (would have been missed by unit tests)
+
+**Lesson Learned**:
+- Design doc should have included "Permission & UX" section
+- Future designs must consider operational requirements upfront
+
+---
+
+#### Gap #2: [e.g., Test strategy didn't match reality]
+
+**Design Assumption**:
+> Unit tests + integration tests sufficient to verify feature
+
+**Reality**:
+- Unit tests passed 100% but feature didn't work in real usage
+- Missing: OS-level keyboard monitoring validation
+
+**Why This Matters**:
+- False confidence from green tests
+- Late problem discovery
+
+**Lesson Learned**:
+- E2E tests must be written BEFORE implementation
+- Test strategy must consider "what CAN'T be unit tested"
+
+---
+
+#### Gap #3: [e.g., Over-engineered solution]
+
+**Design Assumption**:
+> Window focus detection necessary for safety
+
+**Reality**:
+- Feature disabled by default (too strict)
+- Complex platform-specific code unused
+
+**Why This Matters**:
+- Wasted implementation effort
+- Maintenance burden for unused code
+
+**Lesson Learned**:
+- Validate use cases before designing complex features
+- Prototype first for OS-level features
+
+---
+
+### 4.5 Summary of Reality Gaps
+
+| Gap | Design Assumed | Reality Was | Impact | Fix Required |
+|-----|---------------|-------------|--------|--------------|
+| Permission handling | Minor detail | Critical blocker | HIGH | Yes - UX improvements |
+| Test coverage | Unit tests sufficient | E2E needed | MEDIUM | Process change |
+| Window focus | Necessary feature | Over-engineered | LOW | Already simplified |
+
+**Key Takeaway**: [1-2 sentence summary of what we learned about design-reality gaps]
+
+---
+
+## 5. Test Results (Unit & Integration)
+
+### 5.1 Unit Tests
 
 **Summary**:
 
@@ -190,7 +349,7 @@ tests/unit/
 
 - `src/module/file.py:123-145`: [Reason not covered, plan to cover]
 
-### 4.2 Integration Tests
+### 5.2 Integration Tests
 
 **Summary**:
 
@@ -205,7 +364,7 @@ tests/unit/
 - ✅ Database transactions
 - ⚠️ Error recovery (1 flaky test)
 
-### 4.3 Performance Tests
+### 5.3 Performance Tests
 
 **Benchmark Results**:
 
@@ -255,7 +414,7 @@ tests/unit/
 
 ---
 
-## 5. Problems & Solutions
+## 6. Problems & Solutions
 
 ### 5.1 Critical Issues
 
@@ -349,7 +508,7 @@ tests/unit/
 
 ---
 
-## 6. Lessons Learned
+## 7. Lessons Learned
 
 ### 6.1 What Worked Well
 
@@ -466,7 +625,7 @@ Document any technical debt introduced during implementation:
 
 ---
 
-## 7. Quality Metrics
+## 8. Quality Metrics
 
 ### 7.1 Code Quality
 
@@ -530,7 +689,7 @@ Success: no issues found ✅
 
 ---
 
-## 8. Deployment
+## 9. Deployment
 
 ### 8.1 Deployment Checklist
 
@@ -573,7 +732,7 @@ Success: no issues found ✅
 
 ---
 
-## 9. Future Work
+## 10. Future Work
 
 ### 9.1 Immediate Next Steps
 
@@ -625,7 +784,7 @@ Success: no issues found ✅
 
 ---
 
-## 10. Acknowledgments
+## 11. Acknowledgments
 
 **Contributors**:
 
@@ -642,7 +801,7 @@ Success: no issues found ✅
 
 ---
 
-## 11. Appendix
+## 12. Appendix
 
 ### 11.1 References
 

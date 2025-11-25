@@ -1,7 +1,12 @@
 """MCP (Model Context Protocol) client implementation"""
 
-from typing import List, Dict, Any
+import asyncio
+from typing import List, Dict, Any, Optional, TYPE_CHECKING
+
 from .config import MCPServerConfig, MCPTool
+
+if TYPE_CHECKING:
+    from ..utils.cancellation import CancellationToken
 
 
 class MCPClient:
@@ -88,6 +93,81 @@ class MCPClient:
         result = await session.call_tool(original_name, arguments)
 
         return result
+
+    async def call_tool_with_cancellation(
+        self,
+        tool_name: str,
+        arguments: Dict[str, Any],
+        cancellation_token: Optional["CancellationToken"] = None
+    ) -> Any:
+        """Call MCP tool with cancellation support
+
+        Uses asyncio.wait() with FIRST_COMPLETED to immediately respond to
+        cancellation requests without polling delays.
+
+        Args:
+            tool_name: MCP tool name
+            arguments: Tool arguments
+            cancellation_token: Cancellation token for interrupt
+
+        Returns:
+            Tool result
+
+        Raises:
+            asyncio.CancelledError: If cancellation_token is cancelled
+
+        Note:
+            MCP protocol does not currently support interrupt signals.
+            This wrapper cancels the local task but the server may continue processing.
+        """
+        if not cancellation_token:
+            # No cancellation support, call directly
+            return await self.call_tool(tool_name, arguments)
+
+        # Create task for MCP call
+        mcp_task = asyncio.create_task(
+            self.call_tool(tool_name, arguments)
+        )
+
+        # Create cancellation monitoring task
+        cancel_task = asyncio.create_task(
+            cancellation_token.wait()
+        )
+
+        try:
+            # Wait for whichever completes first
+            done, pending = await asyncio.wait(
+                [mcp_task, cancel_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+
+            # Check if cancellation happened
+            if cancel_task in done:
+                # Cancel the MCP task
+                mcp_task.cancel()
+
+                # Wait for it to actually cancel (with timeout)
+                try:
+                    await asyncio.wait_for(mcp_task, timeout=1.0)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass
+
+                # Raise cancellation
+                raise asyncio.CancelledError("MCP tool execution cancelled")
+
+            # MCP task completed normally
+            cancel_task.cancel()
+            return await mcp_task
+
+        finally:
+            # Cleanup: ensure all tasks are cancelled
+            for task in [mcp_task, cancel_task]:
+                if not task.done():
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
 
     def get_tool_definitions(self) -> List[Dict]:
         """获取所有 MCP 工具定义"""

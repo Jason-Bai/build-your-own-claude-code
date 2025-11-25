@@ -1,9 +1,13 @@
 """Base client interface for multi-model support"""
 
+import asyncio
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, AsyncIterator, Optional
+from typing import List, Dict, Any, AsyncIterator, Optional, TYPE_CHECKING
 from dataclasses import dataclass
 import logging
+
+if TYPE_CHECKING:
+    from ..utils.cancellation import CancellationToken
 
 logger = logging.getLogger(__name__)
 
@@ -162,6 +166,89 @@ class BaseClient(ABC):
             ModelResponse 或流式迭代器
         """
         pass
+
+    async def create_message_with_cancellation(
+        self,
+        system: str,
+        messages: List[Dict],
+        tools: List[Dict],
+        max_tokens: int = 8000,
+        temperature: float = 1.0,
+        stream: bool = False,
+        cancellation_token: Optional["CancellationToken"] = None
+    ) -> ModelResponse | AsyncIterator[StreamChunk]:
+        """Create message with cancellation support
+
+        Uses asyncio.wait() with FIRST_COMPLETED to immediately respond to
+        cancellation requests without polling delays.
+
+        Args:
+            system: System prompt
+            messages: Message history
+            tools: Tool definitions
+            max_tokens: Maximum output tokens
+            temperature: Temperature parameter
+            stream: Whether to stream output
+            cancellation_token: Cancellation token for interrupt
+
+        Returns:
+            ModelResponse or stream iterator
+
+        Raises:
+            asyncio.CancelledError: If cancellation_token is cancelled
+        """
+        if not cancellation_token:
+            # No cancellation support, call directly
+            return await self.create_message(
+                system, messages, tools, max_tokens, temperature, stream
+            )
+
+        # Create task for LLM call
+        llm_task = asyncio.create_task(
+            self.create_message(
+                system, messages, tools, max_tokens, temperature, stream
+            )
+        )
+
+        # Create cancellation monitoring task
+        cancel_task = asyncio.create_task(
+            cancellation_token.wait()
+        )
+
+        try:
+            # Wait for whichever completes first
+            done, pending = await asyncio.wait(
+                [llm_task, cancel_task],
+                return_when=asyncio.FIRST_COMPLETED
+            )
+
+            # Check if cancellation happened
+            if cancel_task in done:
+                # Cancel the LLM task
+                llm_task.cancel()
+
+                # Wait for it to actually cancel (with timeout)
+                try:
+                    await asyncio.wait_for(llm_task, timeout=1.0)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass
+
+                # Raise cancellation
+                raise asyncio.CancelledError(cancellation_token.reason)
+
+            # LLM task completed normally
+            cancel_task.cancel()
+            return await llm_task
+
+        finally:
+            # Cleanup: ensure all tasks are cancelled
+            for task in [llm_task, cancel_task]:
+                if not task.done():
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        pass
 
     @abstractmethod
     async def generate_summary(self, prompt: str) -> str:

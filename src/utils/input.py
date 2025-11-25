@@ -1,5 +1,6 @@
 """Prompt-Toolkit 增强的输入管理"""
 
+import os
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from prompt_toolkit.completion import Completer, Completion, CompleteEvent
@@ -7,9 +8,12 @@ from prompt_toolkit.styles import Style
 from prompt_toolkit.document import Document
 from prompt_toolkit.key_binding import KeyBindings
 from pathlib import Path
-import os
 from src.cli.exceptions import SessionPausedException
 from src.events import get_event_bus, Event, EventType
+
+# 设置ESC键超时为50ms（默认是500ms），加快响应速度
+# 这个环境变量会被prompt_toolkit读取
+os.environ.setdefault('PROMPT_TOOLKIT_TTY_TIMEOUT', '0.05')
 
 
 class CommandCompleter(Completer):
@@ -82,6 +86,7 @@ class PromptInputManager:
     - 多行编辑支持（Alt+Enter）
     - 快捷键支持（Ctrl+A/E/K/U/W）
     - 鼠标支持
+    - ESC键暂停session
     """
 
     def __init__(self, history_file: str = ".tiny_claude_code_history"):
@@ -100,6 +105,12 @@ class PromptInputManager:
 
         # 创建 FileHistory 对象
         self.history = FileHistory(str(history_path))
+
+        # ESC key flag - 防止重复调用exit()
+        self._esc_exit_called = False
+
+        # Input state tracking - 用于GlobalKeyboardMonitor判断是否在输入状态
+        self._is_waiting_input = False
 
         # 定义命令补全列表
         self.commands = {
@@ -139,22 +150,39 @@ class PromptInputManager:
         """创建自定义按键绑定"""
         bindings = KeyBindings()
 
-        @bindings.add('escape')
+        @bindings.add('escape', eager=True)
         def _(event):
-            """按下 ESC 键时抛出 SessionPausedException"""
-            # 清除当前输入并重置
+            """按下 ESC 键时暂停session
+
+            使用标志位防止重复调用exit()导致的错误
+            """
+            # 检查是否已经调用过exit()
+            if self._esc_exit_called:
+                return
+
+            # 设置标志位
+            self._esc_exit_called = True
+
+            # 清空当前输入
             event.app.current_buffer.text = ""
 
-            # Emit event for UI to react
+            # 调用exit()退出prompt，返回特殊标记
             try:
-                event_bus = get_event_bus()
-                event_bus.emit_sync(Event(EventType.USER_INPUT_PAUSED))
+                event.app.exit(result="__SESSION_PAUSED__")
             except Exception:
-                pass  # Don't break on event emission failure
-
-            raise SessionPausedException("Session paused by user")
+                # 即使失败也不重置标志位，避免再次尝试
+                pass
 
         return bindings
+
+    @property
+    def is_waiting_input(self) -> bool:
+        """Check if currently waiting for user input
+
+        Returns:
+            True if async_get_input/get_input is awaiting user input, False otherwise
+        """
+        return self._is_waiting_input
 
     def get_input(self, prompt: str = "👤 You: ", default: str = "") -> str:
         """
@@ -215,18 +243,25 @@ class PromptInputManager:
         - Ctrl+W：删除前一个单词
         - Alt+Enter：切换多行模式
         - 鼠标：选择、复制、粘贴
+        - ESC：暂停session并清空输入
 
         Args:
             prompt: 输入提示符
             default: 默认值
 
         Returns:
-            用户输入的文本
+            用户输入的文本，或特殊标记 "__SESSION_PAUSED__"
 
         Raises:
             KeyboardInterrupt: 用户按 Ctrl+C
             EOFError: 用户按 Ctrl+D
         """
+        # 重置ESC标志位
+        self._esc_exit_called = False
+
+        # 设置输入状态标志
+        self._is_waiting_input = True
+
         try:
             # 使用异步 prompt 方法，与事件循环兼容
             text = await self.session.prompt_async(
@@ -238,10 +273,18 @@ class PromptInputManager:
                 mouse_support=True,
                 search_ignore_case=True,
             )
+
+            # 检查是否是暂停标记
+            if text == "__SESSION_PAUSED__":
+                return "__SESSION_PAUSED__"
+
             return text.strip()
         except (KeyboardInterrupt, EOFError):
             # 重新抛出异常，由调用者处理
             raise
+        finally:
+            # 无论成功还是异常，都重置输入状态标志
+            self._is_waiting_input = False
 
     def get_multiline_input(self, prompt: str = "👤 You: ") -> str:
         """

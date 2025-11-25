@@ -49,3 +49,55 @@ class BaseTool(ABC):
     async def execute(self, on_chunk: Optional[Callable[[str], Awaitable[None]]] = None, **params) -> ToolResult:
         """执行工具"""
         pass
+
+
+class SubprocessTool(BaseTool):
+    """Base class for tools that run external processes
+
+    This base class provides a standard interface for tools that spawn
+    subprocesses, enabling uniform cancellation handling.
+
+    Subclasses must implement:
+    - start_async(): Start the process and return a handle
+    - is_running(): Check if process is still running
+    - kill(): Forcefully terminate the process
+    - result(): Get the process result after completion
+    """
+
+    @abstractmethod
+    async def start_async(self, **params):
+        """Start process and return handle
+
+        Returns:
+            Process handle that implements is_running(), kill(), and result()
+        """
+        pass
+
+    @abstractmethod
+    def is_running(self) -> bool:
+        """Check if process is still running
+
+        Returns:
+            True if process is running, False if completed
+        """
+        pass
+
+    @abstractmethod
+    def kill(self):
+        """Forcefully terminate process
+
+        This should send SIGKILL or equivalent to ensure immediate termination.
+        """
+        pass
+
+    @abstractmethod
+    def result(self) -> ToolResult:
+        """Get process result after completion
+
+        Returns:
+            ToolResult containing stdout, stderr, exit code
+
+        Raises:
+            RuntimeError: If process is still running
+        """
+        pass

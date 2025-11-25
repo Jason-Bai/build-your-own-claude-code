@@ -10,6 +10,7 @@ mcp>=1.0.0
 # CLI
 rich>=13.0.0
 prompt-toolkit>=3.0.0
+pynput>=1.7.6  # Global keyboard monitoring for ESC cancellation
 
 # Web search tool
 ddgs>=4.0.0

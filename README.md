@@ -92,7 +92,31 @@ cp .env.example .env
 
 **Configuration Priority:** Environment Variables > .env File > settings.json
 
-### 3. Run the Application
+### 3. Platform-Specific Requirements (Optional)
+
+#### macOS: ESC Cancellation Feature
+
+To enable interrupting long-running operations with the ESC key, you need to grant Accessibility permissions:
+
+1. **Open System Settings** (System Preferences on older macOS)
+2. **Navigate to:** Privacy & Security → Accessibility
+3. **Click the lock icon** and authenticate
+4. **Add your terminal app:**
+   - Terminal.app (built-in macOS terminal)
+   - iTerm2
+   - VS Code
+   - Or your current terminal emulator
+5. **Restart the CLI**
+
+**Check status:** Run `/check-permissions` command in the CLI to diagnose permission issues.
+
+**Note:** The CLI works without these permissions, but you won't be able to cancel operations with ESC. You can still use Ctrl+C or the `/exit` command.
+
+#### Linux & Windows
+
+No special permissions required. ESC cancellation should work out of the box.
+
+### 4. Run the Application
 
 ```bash
 python -m src.main
@@ -212,26 +236,27 @@ The system includes 8 built-in tools with streaming output support:
 
 ## 💻 CLI Commands
 
-The system provides 15 commands with convenient aliases:
+The system provides 16 commands with convenient aliases:
 
-| Command         | Aliases         | Description                             |
-| --------------- | --------------- | --------------------------------------- |
-| `/help`         | `/h`, `/?`      | Show all available commands             |
-| `/clear`        | `/reset`        | Clear conversation history              |
-| `/exit`         | `/quit`, `/q`   | Exit the program                        |
-| `/status`       | `/info`         | Show system status (tools, tokens)      |
-| `/todos`        | -               | Display current task list               |
-| `/save`         | -               | Save current conversation               |
-| `/load`         | -               | Load a saved conversation               |
-| `/list`         | -               | List all saved conversations            |
-| `/delete`       | -               | Delete a saved conversation             |
-| `/checkpoint`   | -               | Manage agent state checkpoints          |
-| `/session`      | `/sess`, `/resume` | Manage and restore sessions          |
-| `/init`         | -               | Initialize workspace context            |
-| `/show`         | -               | Show current workspace context          |
-| `/load-context` | -               | Load workspace context from file        |
-| `/verbose`      | -               | Toggle verbose output mode              |
-| `/quiet`        | -               | Toggle quiet output mode                |
+| Command               | Aliases            | Description                                   |
+| --------------------- | ------------------ | --------------------------------------------- |
+| `/help`               | `/h`, `/?`         | Show all available commands                   |
+| `/clear`              | `/reset`           | Clear conversation history                    |
+| `/exit`               | `/quit`, `/q`      | Exit the program                              |
+| `/status`             | `/info`            | Show system status (tools, tokens)            |
+| `/todos`              | -                  | Display current task list                     |
+| `/save`               | -                  | Save current conversation                     |
+| `/load`               | -                  | Load a saved conversation                     |
+| `/list`               | -                  | List all saved conversations                  |
+| `/delete`             | -                  | Delete a saved conversation                   |
+| `/checkpoint`         | -                  | Manage agent state checkpoints                |
+| `/session`            | `/sess`, `/resume` | Manage and restore sessions                   |
+| `/init`               | -                  | Initialize workspace context                  |
+| `/show`               | -                  | Show current workspace context                |
+| `/load-context`       | -                  | Load workspace context from file              |
+| `/verbose`            | -                  | Toggle verbose output mode                    |
+| `/quiet`              | -                  | Toggle quiet output mode                      |
+| `/check-permissions`  | -                  | Check permission status for ESC cancellation  |
 
 ## 🛠️ Development Guide
 
@@ -264,6 +289,31 @@ The project is organized into major feature enhancement phases. Check the implem
 ## ❓ Troubleshooting
 
 Encountered problems? Find diagnostic guides and solutions for common issues:
+
+### ESC Cancellation Not Working
+
+**Problem:** Pressing ESC doesn't interrupt long-running operations.
+
+**Solutions:**
+
+1. **Check permissions (macOS)**:
+   ```bash
+   # In the CLI, run:
+   /check-permissions
+   ```
+   - If permissions are missing, follow the steps shown in the diagnostic output
+   - Grant Accessibility permissions to your terminal app in System Settings
+
+2. **Verify feature is enabled**:
+   - Look for warning message on CLI startup
+   - If you see "ESC Cancellation Unavailable", follow the instructions
+
+3. **Alternative cancellation methods**:
+   - Use Ctrl+C (SIGINT)
+   - Use `/exit` command
+   - Wait for operation to complete
+
+### Common Issues
 
 👉 **[docs/troubleshooting_guide.md](./docs/troubleshooting_guide.md)**
 

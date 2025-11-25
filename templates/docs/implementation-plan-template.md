@@ -1,8 +1,13 @@
 # [PX/HFX] Feature/Fix Name - Implementation Plan
 
-> **Template Version**: 1.0
+> **Template Version**: 2.0 (Added E2E Test Scenarios section)
 > **Created**: YYYY-MM-DD
 > **Status**: Draft | In Progress | Completed
+>
+> **v2.0 Changes**:
+> - Added Section 4: E2E Test Scenarios & Execution Plan
+> - E2E tests now written BEFORE implementation
+> - Manual test checklist for scenarios that cannot be automated
 
 ---
 
@@ -409,9 +414,117 @@ class ExitCommand(Command):
 
 ---
 
-## 4. Testing Strategy
+## 4. E2E Test Scenarios & Execution Plan
 
-### 4.1 Unit Tests
+> **NEW in v2.0**: E2E tests written BEFORE implementation to expose real-world gaps
+
+### 4.1 Test Scenarios Overview
+
+Link to detailed E2E scenarios document:
+**E2E Scenarios**: [docs/features/vX.X.X/pX-xxx-e2e-scenarios.md](./pX-xxx-e2e-scenarios.md)
+
+**Summary**:
+
+| Scenario | Priority | Can Automate? | Expected Result |
+|----------|----------|---------------|-----------------|
+| [e.g., User cancels LLM with ESC] | P0 | Partial (CLI response only) | Cancelled within 1s |
+| [e.g., Missing permissions on startup] | P0 | Yes | Warning displayed, feature disabled |
+| [e.g., ESC during input clears text] | P1 | No (manual) | Input cleared, no cancellation |
+
+### 4.2 Automated E2E Tests
+
+**Test File**: `tests/e2e/test_pX_feature_name.py`
+
+**Test Strategy**:
+```python
+class CLISession:
+    """Wrapper for real CLI subprocess"""
+    def start(self): ...
+    def send_input(self, text): ...
+    def read_output(self, timeout): ...
+    def terminate(self): ...
+
+@pytest.mark.e2e
+class TestFeatureName:
+    def test_scenario_1(self):
+        """Automated test for Scenario 1"""
+        with CLISession() as session:
+            session.send_input("trigger feature")
+            output = session.read_output(timeout=5)
+            assert "expected result" in output
+```
+
+**Limitations**:
+- ❌ Cannot simulate: [e.g., Real ESC key press, window focus changes]
+- ✅ Can test: [e.g., CLI startup, command execution, permission detection]
+
+### 4.3 Manual Test Checklist
+
+For scenarios that cannot be automated:
+
+**Manual Test 1**: [e.g., ESC cancels LLM call]
+```
+Steps:
+1. Start CLI: python -m src.main
+2. Send: "Generate large file"
+3. Press ESC after 2s
+4. Verify: "Cancelled" message appears within 1s
+5. Verify: CLI returns to prompt (not crashed)
+
+Expected: ⚠️ Execution cancelled by user (ESC pressed)
+```
+
+**Manual Test 2**: [e.g., Window focus detection]
+```
+Steps:
+1. Start CLI
+2. Trigger long operation
+3. Switch to browser (terminal loses focus)
+4. Press ESC
+5. Verify: Behavior depends on require_window_focus setting
+
+Expected: ESC ignored if require_window_focus=True
+```
+
+### 4.4 Test Execution Order
+
+**Phase 1: E2E Tests (BEFORE Implementation)**
+1. Write E2E test scenarios (expect ALL to fail)
+2. Commit failing tests to repository
+3. Use failures to refine implementation plan
+
+**Phase 2: Unit Tests (DURING Implementation)**
+4. Write unit tests for each module
+5. Tests pass as implementation progresses
+
+**Phase 3: Integration Tests (AFTER Core Implementation)**
+6. Write integration tests for component interaction
+7. Tests validate end-to-end workflows
+
+**Phase 4: E2E Validation (COMPLETION Criteria)**
+8. Run E2E tests again
+9. Fix issues until tests pass
+10. Run manual test checklist
+11. **Definition of Done**: All automated E2E tests pass, manual checklist verified
+
+### 4.5 Test Environment Requirements
+
+**Automated Tests**:
+- Python >= 3.10
+- pytest, pytest-asyncio
+- Mock LLM server (if needed)
+- Temp directory for isolated testing
+
+**Manual Tests**:
+- Real terminal (Terminal.app, iTerm2, etc.)
+- macOS Accessibility permissions (for keyboard tests)
+- API keys (if testing real LLM calls)
+
+---
+
+## 5. Testing Strategy (Unit & Integration)
+
+### 5.1 Unit Tests
 
 #### ActionLogger Tests
 
@@ -576,9 +689,9 @@ def test_high_throughput():
 
 ---
 
-## 5. Dependencies
+## 6. Dependencies
 
-### 5.1 New Dependencies
+### 6.1 New Dependencies
 
 #### Python Standard Library (no installation needed)
 
@@ -626,9 +739,9 @@ Add logging configuration section:
 
 ---
 
-## 6. Definition of Done
+## 7. Definition of Done
 
-### 6.1 Functional Completion Criteria
+### 7.1 Functional Completion Criteria
 
 - [ ] **Core features functional**
 
@@ -652,7 +765,7 @@ Add logging configuration section:
 
 ---
 
-### 6.2 Testing Completion Criteria
+### 7.2 Testing Completion Criteria
 
 - [ ] **Unit tests pass**
 
@@ -671,7 +784,7 @@ Add logging configuration section:
 
 ---
 
-### 6.3 Code Quality Criteria
+### 7.3 Code Quality Criteria
 
 - [ ] **Linting passes**
 
@@ -686,7 +799,7 @@ Add logging configuration section:
 
 ---
 
-### 6.4 Documentation Completion Criteria
+### 7.4 Documentation Completion Criteria
 
 - [ ] **Implementation documentation**
 
@@ -728,7 +841,7 @@ Add logging configuration section:
 
 ---
 
-## 8. Progress Tracking
+## 9. Progress Tracking
 
 ### 8.1 Overall Progress
 

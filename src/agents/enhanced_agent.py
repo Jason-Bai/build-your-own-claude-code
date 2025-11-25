@@ -29,6 +29,7 @@ from ..logging.types import ActionType
 
 if TYPE_CHECKING:
     from ..mcps import MCPClient
+    from ..utils.cancellation import CancellationToken
 
 
 class EnhancedAgent:
@@ -113,13 +114,19 @@ class EnhancedAgent:
         if self.on_state_change:
             self.on_state_change(old_state, new_state)
 
-    async def run(self, user_input: str, verbose: bool = True) -> Dict:
+    async def run(
+        self,
+        user_input: str,
+        verbose: bool = True,
+        cancellation_token: Optional["CancellationToken"] = None
+    ) -> Dict:
         """
         运行 Agent 处理用户输入
 
         Args:
             user_input: 用户输入
             verbose: 是否打印详细信息
+            cancellation_token: 取消令牌，用于中断执行
 
         Returns:
             执行结果统计
@@ -127,6 +134,9 @@ class EnhancedAgent:
         execution_id = str(uuid.uuid4())
         feedback = AgentFeedback(level=FeedbackLevel.MINIMAL if verbose else FeedbackLevel.SILENT)
         self._hook_context_builder = HookContextBuilder()
+
+        # Store cancellation_token for use in helper methods
+        self._cancellation_token = cancellation_token
 
         await self.hook_manager.trigger(
             HookEvent.ON_USER_INPUT,
@@ -285,13 +295,24 @@ class EnhancedAgent:
         )
 
         try:
-            response = await self.client.create_message(
-                system=self.context_manager.system_prompt,
-                messages=messages,
-                tools=tools,
-                max_tokens=8000,
-                stream=False
-            )
+            # Use cancellation-aware wrapper if token is available
+            if hasattr(self, '_cancellation_token') and self._cancellation_token:
+                response = await self.client.create_message_with_cancellation(
+                    system=self.context_manager.system_prompt,
+                    messages=messages,
+                    tools=tools,
+                    max_tokens=8000,
+                    stream=False,
+                    cancellation_token=self._cancellation_token
+                )
+            else:
+                response = await self.client.create_message(
+                    system=self.context_manager.system_prompt,
+                    messages=messages,
+                    tools=tools,
+                    max_tokens=8000,
+                    stream=False
+                )
 
             # P11: Log LLM response
             usage = response.usage or {}
@@ -492,9 +513,10 @@ class EnhancedAgent:
 
             # 执行工具
             result = await self.tool_manager.execute_tool(
-                tool_name, 
-                tool_input, 
-                on_chunk=_stream_bridge
+                tool_name,
+                tool_input,
+                on_chunk=_stream_bridge,
+                cancellation_token=self._cancellation_token
             )
 
             # 更新工具调用结果

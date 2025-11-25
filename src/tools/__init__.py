@@ -1,6 +1,6 @@
 """Tool exports"""
 
-from .base import BaseTool, ToolResult, ToolPermissionLevel
+from .base import BaseTool, ToolResult, ToolPermissionLevel, SubprocessTool
 from .executor import ToolExecutor
 from .file_ops import ReadTool, WriteTool, EditTool
 from .bash import BashTool
@@ -10,6 +10,7 @@ from .web_search import WebSearchTool
 
 __all__ = [
     "BaseTool",
+    "SubprocessTool",
     "ToolResult",
     "ToolPermissionLevel",
     "ToolExecutor",

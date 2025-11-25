@@ -32,6 +32,9 @@ from .output_commands import (
 from .logging_commands import (
     LogCommand
 )
+from .permission_commands import (
+    CheckPermissionsCommand
+)
 
 
 def register_builtin_commands():
@@ -58,6 +61,8 @@ def register_builtin_commands():
     command_registry.register(QuietCommand())
     # Logging commands
     command_registry.register(LogCommand())
+    # Permission commands
+    command_registry.register(CheckPermissionsCommand())
 
 
 __all__ = [

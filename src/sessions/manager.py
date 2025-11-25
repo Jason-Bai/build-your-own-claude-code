@@ -1,6 +1,7 @@
 """SessionManager - Manages session lifecycle and state"""
 
 import asyncio
+import threading
 from datetime import datetime
 from typing import Optional, List, Dict
 
@@ -8,6 +9,7 @@ from .types import Session
 from ..persistence.manager import PersistenceManager
 from ..logging import get_action_logger
 from ..logging.types import ActionType
+from ..utils.cancellation import CancellationToken
 
 
 class SessionManager:
@@ -18,6 +20,53 @@ class SessionManager:
         self.persistence = persistence_manager
         self.current_session: Optional[Session] = None
         self.logger = action_logger or get_action_logger()
+
+        # Cancellation token management
+        self._cancellation_token = CancellationToken()
+        self._execution_lock = threading.Lock()  # Protects compound operations on execution state
+
+    # ========== Cancellation Management ==========
+
+    def start_new_execution(self):
+        """Start a new execution, creating a fresh cancellation token
+
+        Call this before starting a new user query to ensure clean cancellation state.
+        """
+        with self._execution_lock:
+            self._cancellation_token = CancellationToken()
+
+    def cancel_all(self, reason: str = "User cancelled"):
+        """Cancel the current execution (thread-safe)
+
+        This method can be called from any thread (e.g., GlobalKeyboardMonitor's
+        background thread). It safely schedules the cancellation on the asyncio
+        event loop.
+
+        Args:
+            reason: Human-readable reason for cancellation
+        """
+        with self._execution_lock:
+            # Try to get the running event loop
+            try:
+                loop = asyncio.get_running_loop()
+                # If called from a different thread, schedule on the event loop
+                loop.call_soon_threadsafe(
+                    self._cancellation_token.cancel,
+                    reason
+                )
+            except RuntimeError:
+                # No running event loop (shouldn't happen in normal operation)
+                # Fall back to direct call (synchronous context)
+                self._cancellation_token.cancel(reason)
+
+    @property
+    def cancellation_token(self) -> CancellationToken:
+        """Get the current cancellation token
+
+        Returns:
+            The active cancellation token for the current execution
+        """
+        return self._cancellation_token
 
     # ========== Session Lifecycle Methods ==========
 
@@ -92,7 +141,30 @@ class SessionManager:
             self.current_session = None
 
     def pause_session(self, reason: str = "user_request") -> None:
-        """Pause current session
+        """Pause current session (synchronous version - may not save properly in async context)
+
+        Args:
+            reason: Pause reason (user_request, permission_request, etc.)
+
+        Warning:
+            This method uses _save_session_sync() which may fail in async context.
+            Prefer using pause_session_async() when in async context.
+        """
+        if self.current_session:
+            self.current_session.status = "paused"
+
+            # Log session pause
+            self.logger.log(
+                action_type=ActionType.SESSION_PAUSE,
+                session_id=self.current_session.session_id,
+                pause_time=datetime.now().isoformat(),
+                reason=reason
+            )
+
+            self._save_session_sync()
+
+    async def pause_session_async(self, reason: str = "user_request") -> None:
+        """Pause current session (async version)
 
         Args:
             reason: Pause reason (user_request, permission_request, etc.)
@@ -108,7 +180,8 @@ class SessionManager:
                 reason=reason
             )
 
-            self._save_session_sync()
+            # Use async save
+            await self.save_session_async()
 
     def resume_session(self, session_id: str) -> Session:
         """Resume a paused session

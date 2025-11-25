@@ -33,6 +33,7 @@ class ActionType(str, Enum):
     SESSION_END = "session_end"
     SESSION_PAUSE = "session_pause"      # 会话暂停
     SESSION_RESUME = "session_resume"    # 会话恢复
+    EXECUTION_CANCELLED = "execution_cancelled"  # 执行被取消（用户按ESC）
 
     # 系统级别
     SYSTEM_ERROR = "system_error"  # 新增：系统错误

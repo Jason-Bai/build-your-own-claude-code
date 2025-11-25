@@ -11,6 +11,7 @@ from ..config.args import parse_args
 from ..initialization.setup import initialize_agent, _setup_event_listeners
 from .exceptions import SessionPausedException
 from .ui_coordinator import init_coordinator
+from .monitor import GlobalKeyboardMonitor
 from ..logging import get_action_logger
 from ..logging.types import ActionType
 
@@ -73,6 +74,53 @@ async def main():
     action_logger = get_action_logger()
     action_logger.set_session_manager(session_manager)
 
+    # P12: Initialize GlobalKeyboardMonitor for ESC cancellation
+    # Note: require_window_focus=False allows ESC to work even when terminal not focused
+    # This is useful during development/debugging. Set to True for stricter behavior.
+    keyboard_monitor = None
+    esc_monitoring_enabled = False
+
+    try:
+        keyboard_monitor = GlobalKeyboardMonitor(
+            session_manager,
+            input_manager,
+            require_window_focus=False  # Disabled by default for easier testing
+        )
+        keyboard_monitor.start()
+        esc_monitoring_enabled = True
+        # Success - no message needed, feature works silently
+    except PermissionError:
+        # Explicitly disable monitoring
+        keyboard_monitor = None
+        OutputFormatter.warning(
+            "⚠️  ESC Cancellation Unavailable\n"
+            "\n"
+            "   Reason: macOS Accessibility permissions not granted\n"
+            "   Impact: You cannot interrupt operations by pressing ESC\n"
+            "\n"
+            "   💡 Alternative: Use Ctrl+C to interrupt operations\n"
+            "\n"
+            "   To enable ESC cancellation:\n"
+            "   1. Open System Settings (System Preferences on older macOS)\n"
+            "   2. Go to: Privacy & Security → Accessibility\n"
+            "   3. Click the lock icon and authenticate\n"
+            "   4. Add your terminal app to the list:\n"
+            "      - Terminal.app (built-in)\n"
+            "      - iTerm2\n"
+            "      - VS Code\n"
+            "      - Or your current terminal emulator\n"
+            "   5. Restart this CLI\n"
+            "\n"
+            "   For diagnostics: Type '/check-permissions'\n"
+        )
+    except Exception as e:
+        keyboard_monitor = None
+        OutputFormatter.warning(
+            f"⚠️  ESC Cancellation Unavailable: {e}\n"
+            f"   💡 Alternative: Use Ctrl+C to interrupt operations\n"
+            f"   Type '/check-permissions' for diagnostic information\n"
+        )
+
     # Display Welcome Message
     if OutputFormatter.level != OutputLevel.QUIET:
         OutputFormatter.display_welcome_message(session.session_id)
@@ -97,13 +145,18 @@ async def main():
                 is_first_iteration = False
 
                 user_input = await input_manager.async_get_input()
-                if not user_input:
+
+                # 检查是否是session暂停标记
+                if user_input == "__SESSION_PAUSED__":
+                    # 清除exit()后多余的"You: "提示（向上移动一行并清除）
+                    print('\033[F\033[K', end='', flush=True)
+
+                    # 暂停当前session（使用async版本）
+                    await session_manager.pause_session_async(reason="user_input_paused")
                     continue
 
-                # Auto-resume session if it was paused (from ESC key)
-                if session_manager.current_session and session_manager.current_session.is_paused():
-                    session_manager.resume_session(session_manager.current_session.session_id)
-                    OutputFormatter.info("Session resumed.")
+                if not user_input:
+                    continue
 
                 # P11: Get logger for action logging
                 action_logger = get_action_logger()
@@ -134,10 +187,17 @@ async def main():
                     content=user_input
                 )
 
+                # P12: Start new execution (creates fresh cancellation token)
+                session_manager.start_new_execution()
+
                 # Otherwise, send to agent
                 # Note: UI Manager handles the "Thinking..." and tool execution visualization
                 # We disable verbose output in agent.run to avoid duplicate printing
-                result = await agent.run(user_input, verbose=False)
+                result = await agent.run(
+                    user_input,
+                    verbose=False,
+                    cancellation_token=session_manager.cancellation_token
+                )
 
                 if isinstance(result, dict):
                     final_response = result.get("final_response", "")
@@ -159,15 +219,22 @@ async def main():
                     # Save session after each interaction
                     await session_manager.save_session_async()
 
-            except SessionPausedException:
-                # Handle ESC key pause
-                # Log session pause (user requested via ESC key)
-                session_manager.pause_session(reason="user_input_paused")
-                OutputFormatter.info("\nSession paused. Input cleared.")
-                # Note: Session will auto-resume on next input
-                continue
             except KeyboardInterrupt:
                 OutputFormatter.info("Use /exit to quit properly")
+                continue
+            except asyncio.CancelledError:
+                # P12: Handle ESC cancellation
+                OutputFormatter.warning("\n⚠️  Execution cancelled by user (ESC pressed)")
+
+                # Log the cancellation
+                action_logger.log(
+                    action_type=ActionType.EXECUTION_CANCELLED,
+                    session_id=session.session_id,
+                    reason="User pressed ESC"
+                )
+
+                # Pause session
+                await session_manager.pause_session_async(reason="execution_cancelled")
                 continue
             except EOFError:
                 OutputFormatter.success("Goodbye!")
@@ -183,6 +250,10 @@ async def main():
         # Note: Normal exit via /exit command handles cleanup in ExitCommand
         from ..logging.constants import DEFAULT_BATCH_TIMEOUT
         import time
+
+        # P12: Stop GlobalKeyboardMonitor
+        if keyboard_monitor is not None:
+            keyboard_monitor.stop()
 
         # Check if session still exists - if so, this is an abnormal exit
         if session_manager.current_session:

@@ -151,11 +151,30 @@ Define in `~/.tiny-claude/settings.json`:
 
 #### Workflow Overview
 
+**New Features (Recommended Flow - Test-First Approach):**
+
 ```
-Design → Implementation → Review
-   ↓           ↓            ↓
-  📋          🛠️           ✅
+1. Design Doc (Simplified) → 2. E2E Test Scenarios (Write first, expect to fail)
+   ↓                              ↓
+3. Implementation Plan → 4. Implementation → 5. E2E Tests Pass ✅
+   ↓                                              ↓
+6. Integration/Unit Tests → 7. Review Doc (with real issues documented)
 ```
+
+**Existing Features (Selective Remediation):**
+
+```
+Risk Assessment → High Risk? → Add E2E Tests → Fix Issues
+                    ↓ Low Risk
+                    Keep Current Tests
+```
+
+**Key Principles:**
+
+- ✅ **Test-Driven for New Work**: Write E2E test scenarios BEFORE implementation
+- ✅ **Reality Check**: E2E tests expose documentation-reality gaps early
+- ✅ **Selective Coverage**: Not all features need E2E tests (cost vs benefit)
+- ✅ **Mixed Strategy**: E2E (scenarios) + Integration (components) + Unit (edge cases)
 
 #### Phase 1: Design Document
 
@@ -186,12 +205,72 @@ Design → Implementation → Review
 - Requirements Analysis (functional, non-functional, boundaries)
 - Technical Solution (architecture, modules, data structures)
 - MVP Definition (must-have vs should-have vs nice-to-have)
+- **User Scenarios** (concrete examples of user interactions - NEW)
 - Risk Assessment (technical, resource, dependency risks)
 - Acceptance Criteria
 
 **Template**: [`templates/docs/design-document-template.md`](../templates/docs/design-document-template.md)
 
 **When**: Before starting any implementation work
+
+---
+
+#### Phase 1.5: E2E Test Scenarios (NEW - Test-First Approach)
+
+**Naming Convention**: `pX-feature-name-e2e-scenarios.md` or directly in code
+
+**Location**:
+- Documentation: `docs/features/vX.X.X/pX-feature-name-e2e-scenarios.md`
+- Code: `tests/e2e/test_pX_feature_name.py`
+
+**Purpose**: Write executable test scenarios that describe real user behavior BEFORE implementation
+
+**Key Requirements**:
+
+- **Write tests that WILL FAIL initially** (since feature not implemented yet)
+- Describe concrete user interactions (input → expected behavior)
+- Cover critical paths and edge cases from design doc
+- Include environment prerequisites (permissions, config, etc.)
+
+**Example Structure**:
+
+```python
+# tests/e2e/test_p12_esc_monitor.py
+
+@pytest.mark.e2e
+class TestGlobalESCMonitor:
+    """P12: Real user scenarios for ESC cancellation"""
+
+    def test_startup_permission_check(self):
+        """Scenario: User starts CLI without accessibility permissions"""
+        # Expected: Warning message displayed
+        # Expected: CLI continues without ESC monitoring
+
+    def test_esc_cancels_llm_call(self):
+        """Scenario: User presses ESC during long LLM operation"""
+        # Given: LLM call in progress
+        # When: User presses ESC
+        # Then: Operation cancelled within 1 second
+        # Then: "Cancelled" message displayed
+
+    def test_esc_during_input_ignored(self):
+        """Scenario: User presses ESC while typing input"""
+        # Given: User in input prompt
+        # When: User presses ESC
+        # Then: Input cleared (normal terminal behavior)
+        # Then: Execution NOT cancelled
+```
+
+**When**:
+- After Phase 1 (Design Doc) is approved
+- BEFORE Phase 2 (Implementation Plan) starts
+- Tests should be committed in "expected to fail" state
+
+**Benefits**:
+- ✅ Forces thinking about real-world usage early
+- ✅ Exposes missing requirements (e.g., permission handling)
+- ✅ Provides clear "Definition of Done" (tests pass)
+- ✅ Prevents documentation-reality gaps
 
 ---
 
@@ -216,15 +295,18 @@ Design → Implementation → Review
 - Implementation Steps (P0/P1/P2 priority breakdown)
 - File Checklist (new files + modified files with line numbers)
 - Core Logic Implementation (code examples)
-- Testing Strategy (unit, integration, performance tests)
+- **E2E Test Execution Plan** (how to run and verify scenarios - NEW)
+- Testing Strategy (unit, integration tests to supplement E2E)
 - Definition of Done (functional, testing, code quality, documentation)
 - Progress Tracking
 
 **Template**: [`templates/docs/implementation-plan-template.md`](../templates/docs/implementation-plan-template.md)
 
-**Links Back To**: Design document (at the top of the file)
+**Links Back To**:
+- Design document (at the top of the file)
+- E2E test scenarios (reference specific test cases)
 
-**When**: After design approval, before coding begins
+**When**: After Phase 1.5 (E2E scenarios written), before coding begins
 
 ---
 
@@ -249,20 +331,36 @@ Design → Implementation → Review
 - Executive Summary (metrics, final status)
 - Implementation Checklist (completed/partial/incomplete features)
 - Deviation Analysis (design changes, scope changes)
+- **E2E Test Results** (which scenarios passed, which failed, why - NEW)
 - Test Results (unit, integration, performance, security)
+- **Documentation-Reality Gaps** (what assumptions were wrong - NEW)
 - Problems & Solutions (critical issues, root causes, prevention)
 - Lessons Learned (what worked, what didn't, technical debt)
 - Quality Metrics (code quality, documentation, user impact)
 
 **Template**: [`templates/docs/review-document-template.md`](../templates/docs/review-document-template.md)
 
-**Links Back To**: Both design document and implementation plan (at the top)
+**Links Back To**:
+- Design document (at the top)
+- Implementation plan (at the top)
+- E2E test scenarios (final pass/fail status)
 
-**When**: After implementation is complete and tested
+**When**: After implementation is complete AND all E2E tests pass (or failures documented)
 
 ---
 
 #### Workflow Benefits
+
+✅ **Prevents Documentation-Reality Gaps** (NEW)
+
+- E2E tests written first expose missing requirements early
+- Tests fail until real-world issues are addressed
+- Forces consideration of environment prerequisites (permissions, config)
+
+✅ **Clear Definition of Done**
+
+- Feature complete = all E2E scenarios pass
+- No ambiguity about "is it really working?"
 
 ✅ **Ensures Stable Implementation**
 
@@ -288,13 +386,46 @@ Design → Implementation → Review
 - Technical decisions documented with rationale
 - Problems and solutions searchable
 
+#### Test Strategy Guidelines
+
+**When to Write E2E Tests** (Risk-Based):
+
+- ✅ **High Priority**: User-facing features, system integrations, security-critical paths
+- ✅ **Medium Priority**: Complex workflows, multi-component interactions
+- ❌ **Low Priority**: Pure algorithms, simple utilities, internal helpers
+
+**Test Pyramid Balance**:
+
+```
+        E2E (Few, Slow, High Value)
+       /   \
+      /     \
+     /       \
+    / Integration (More, Faster)
+   /           \
+  /             \
+ / Unit (Many, Fast, Low Level)
+/_______________\
+```
+
+**For Existing Features** (P1-P12):
+
+1. **Risk Assessment**: Evaluate impact if feature breaks
+2. **Selective E2E**: Add tests only for high-risk features (like P12)
+3. **Maintain Current Tests**: Keep existing unit/integration tests
+4. **Document Gaps**: Note in Review Doc where E2E coverage is missing
+
 #### Example File Structure
 
 ```
 docs/features/v0.0.1/
-├── p8-session-manager-design-document.md      # Design Phase
-├── p8-session-manager-implement-plan.md       # Implementation Phase
-└── p8-session-manager-review-document.md      # Review Phase
+├── p12-global-esc-monitor-design-document.md       # Phase 1
+├── p12-global-esc-monitor-e2e-scenarios.md         # Phase 1.5 (NEW)
+├── p12-global-esc-monitor-implement-plan.md        # Phase 2
+└── p12-global-esc-monitor-review-document.md       # Phase 3
+
+tests/e2e/
+└── test_p12_esc_monitor.py                         # E2E scenarios (code)
 ```
 
 ---
